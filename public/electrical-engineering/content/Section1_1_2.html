@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时变电流交互学习平台</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f0f7ff, #e6f0ff, #d9e8ff);
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .content-wrapper {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .side-panel {
+            flex: 1;
+            min-width: 350px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 0 30px rgba(100, 150, 200, 0.15);
+            border: 1px solid rgba(0, 180, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wave-display {
+            flex: 2;
+            min-width: 600px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 0 30px rgba(100, 150, 200, 0.15);
+            border: 1px solid rgba(0, 180, 255, 0.1);
+        }
+
+        /* 四格波形显示区域 */
+        .wave-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+            height: 500px;
+            margin-bottom: 20px;
+        }
+
+        .wave-cell {
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 15px rgba(100, 150, 200, 0.1);
+            border: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .wave-cell:hover {
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .wave-cell.expandable {
+            position: relative;
+        }
+
+        .wave-cell.expandable::after {
+            content: "点击放大";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 150, 255, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .wave-cell.expandable:hover::after {
+            opacity: 1;
+        }
+
+        .wave-cell-header {
+            padding: 10px 15px;
+            background: rgba(240, 247, 255, 0.8);
+            border-bottom: 1px solid rgba(100, 180, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .wave-cell-title {
+            font-size: 1.1rem;
+            color: #0066cc;
+            font-weight: 500;
+        }
+
+        .wave-cell-content {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wave-placeholder {
+            text-align: center;
+            color: #6699cc;
+            padding: 20px;
+        }
+
+        .wave-info {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(240, 247, 255, 0.8);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(100, 180, 255, 0.2);
+            flex-wrap: wrap;
+        }
+
+        .info-card {
+            flex: 1;
+            min-width: 120px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 5px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+            border: 1px solid #e6e6e6;
+        }
+
+        .info-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 100, 255, 0.1);
+            background: #f9fbff;
+        }
+
+        .info-card h3 {
+            margin-bottom: 10px;
+            color: #0066cc;
+            font-size: 1.1rem;
+        }
+
+        .value-display {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            padding: 8px;
+            background: #f0f7ff;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 200, 255, 0.2);
+            color: #333;
+        }
+
+        h2 {
+            font-size: 1.7rem;
+            margin-bottom: 20px;
+            color: #0066cc;
+            position: relative;
+            padding-bottom: 12px;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(90deg, #0099ff, transparent);
+        }
+
+        .equation-card {
+            background: #f9fbff;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(50, 150, 255, 0.1);
+        }
+
+        .equation-header {
+            color: #0066cc;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .equation-display {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+            border: 1px solid rgba(100, 180, 255, 0.2);
+            font-family: 'Times New Roman', serif;
+            color: #333;
+        }
+
+        .math-expression {
+            font-style: italic;
+            font-family: 'Times New Roman', serif;
+        }
+
+        .param-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .param-item {
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #0099ff;
+            display: flex;
+            border: 1px solid #f0f0f0;
+        }
+
+        .param-symbol {
+            font-family: 'Times New Roman', serif;
+            font-size: 1.2rem;
+            color: #0066cc;
+            display: inline-block;
+            width: 50px;
+            font-weight: bold;
+            text-align: center;
+            margin-right: 15px;
+            font-style: italic;
+        }
+
+        .controls {
+            background: #f9fbff;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(50, 150, 255, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            color: #336699;
+            font-weight: 500;
+        }
+
+        .symbol-label {
+            font-style: italic;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(to right, #99ccff, #0099ff);
+            outline: none;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #0099ff;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 153, 255, 0.5);
+            border: 2px solid white;
+        }
+
+        .wave-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0099ff, #0077cc);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #ff6688, #cc4466);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #33cc77, #22aa66);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 100, 255, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .wave-btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #66b3ff, #3399ff);
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin: 5px;
+        }
+
+        .wave-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 100, 255, 0.2);
+        }
+
+        .wave-btn.active {
+            background: linear-gradient(135deg, #00ccaa, #00aa88);
+            color: white;
+            box-shadow: 0 0 20px rgba(0, 200, 160, 0.3);
+        }
+
+        /* 波形叠加相关样式 */
+        .superimpose-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f8ff;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 180, 255, 0.2);
+        }
+
+        .superimpose-toggle {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .toggle-label {
+            font-size: 1.1rem;
+            color: #0066cc;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #0099ff;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .superimpose-controls {
+            display: none;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+            margin-top: 10px;
+        }
+
+        .wave-controls {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #e0e0e0;
+        }
+
+        .wave-controls:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .wave-title {
+            font-size: 1.1rem;
+            color: #0066cc;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(0, 150, 255, 0.2);
+        }
+
+        .wave-color {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .wave1-color {
+            background-color: #0066cc;
+        }
+
+        .wave2-color {
+            background-color: #cc3366;
+        }
+
+        .wave3-color {
+            background-color: #cc9900;
+        }
+
+        .result-color {
+            background-color: #00aa88;
+        }
+
+        .superimpose-result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9fbff;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+            display: none;
+        }
+
+        .result-equation {
+            text-align: center;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            font-family: 'Times New Roman', serif;
+        }
+
+        /* 新增：模态窗口样式 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 95%;
+            height: 95%;
+            padding: 30px;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: #0066cc;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #666;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover {
+            color: #ff3333;
+        }
+
+        .modal-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            gap: 20px;
+        }
+
+        .modal-wave-container {
+            flex: 1;
+            position: relative;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+            min-height: 400px;
+        }
+
+        .modal-controls-container {
+            display: flex;
+            gap: 20px;
+            height: 300px;
+        }
+
+        .modal-controls-panel {
+            flex: 1;
+            background: #f9fbff;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+            overflow-y: auto;
+        }
+
+        .modal-controls-title {
+            font-size: 1.3rem;
+            color: #0066cc;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .modal-wave-info {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(240, 247, 255, 0.8);
+            border-radius: 15px;
+            margin-top: 20px;
+            border: 1px solid rgba(100, 180, 255, 0.2);
+        }
+
+        .modal-info-card {
+            flex: 1;
+            min-width: 120px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 5px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+            border: 1px solid #e6e6e6;
+        }
+
+        .modal-info-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 100, 255, 0.1);
+            background: #f9fbff;
+        }
+
+        .modal-info-card h3 {
+            margin-bottom: 10px;
+            color: #0066cc;
+            font-size: 1.1rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #666;
+            box-shadow: 0 -5px 15px rgba(100, 150, 200, 0.1);
+        }
+
+        .symbol-explanation {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .content-wrapper {
+                flex-direction: column;
+            }
+
+            .wave-display, .side-panel {
+                min-width: 100%;
+            }
+
+            .modal-controls-container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .modal-controls-panel {
+                min-height: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .wave-info {
+                flex-direction: column;
+            }
+
+            .info-card {
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            .action-buttons, .wave-buttons {
+                flex-direction: column;
+            }
+
+            .btn, .wave-btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            .wave-grid {
+                height: 800px;
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr 1fr 1fr 1fr;
+            }
+
+            .modal-content {
+                width: 98%;
+                height: 98%;
+                padding: 15px;
+            }
+
+            .modal-controls-container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .modal-controls-panel {
+                min-height: 200px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+
+            .wave-display, .side-panel {
+                padding: 15px;
+            }
+
+            .equation-display {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content-wrapper">
+            <div class="wave-display">
+                <!-- 四格波形显示区域 -->
+                <div class="wave-grid">
+                    <div class="wave-cell" id="wave-cell-1">
+                        <div class="wave-cell-header">
+                            <div class="wave-cell-title">波形1</div>
+                            <div class="value-display" id="wave1-value">0.00 A</div>
+                        </div>
+                        <div class="wave-cell-content" id="wave-container-1">
+                            <div class="wave-placeholder">
+                                <p>波形1未生成</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wave-cell" id="wave-cell-2">
+                        <div class="wave-cell-header">
+                            <div class="wave-cell-title">波形2</div>
+                            <div class="value-display" id="wave2-value">0.00 A</div>
+                        </div>
+                        <div class="wave-cell-content" id="wave-container-2">
+                            <div class="wave-placeholder">
+                                <p>波形2未生成</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wave-cell" id="wave-cell-3">
+                        <div class="wave-cell-header">
+                            <div class="wave-cell-title">波形3</div>
+                            <div class="value-display" id="wave3-value">0.00 A</div>
+                        </div>
+                        <div class="wave-cell-content" id="wave-container-3">
+                            <div class="wave-placeholder">
+                                <p>波形3未生成</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wave-cell expandable" id="wave-cell-result">
+                        <div class="wave-cell-header">
+                            <div class="wave-cell-title">叠加结果</div>
+                            <div class="value-display" id="result-value">0.00 A</div>
+                        </div>
+                        <div class="wave-cell-content" id="wave-container-result">
+                            <div class="wave-placeholder">
+                                <p>叠加波形未生成</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="generate-btn" class="btn btn-primary">生成所有波形</button>
+                    <button id="run-btn" class="btn btn-success" disabled>运行所有波形</button>
+                    <button id="reset-btn" class="btn btn-secondary">重置所有参数</button>
+                </div>
+
+                <div class="equation-card">
+                    <div class="equation-header" id="wave-equation-header">波形叠加表达式</div>
+                    <div class="equation-display">
+                        <span class="math-expression" id="wave-equation">i = i<sub>1</sub> + i<sub>2</sub> + i<sub>3</sub></span>
+                    </div>
+                    <div class="symbol-explanation">
+                        i: 总瞬时电流值; i<sub>1</sub>, i<sub>2</sub>, i<sub>3</sub>: 各波形瞬时电流值
+                    </div>
+                    <ul class="param-list">
+                        <li class="param-item">
+                            <span class="param-symbol">i<sub>1</sub></span>
+                            <span>波形1的瞬时电流值</span>
+                        </li>
+                        <li class="param-item">
+                            <span class="param-symbol">i<sub>2</sub></span>
+                            <span>波形2的瞬时电流值</span>
+                        </li>
+                        <li class="param-item">
+                            <span class="param-symbol">i<sub>3</sub></span>
+                            <span>波形3的瞬时电流值</span>
+                        </li>
+                        <li class="param-item">
+                            <span class="param-symbol">i</span>
+                            <span>三个波形叠加后的总瞬时电流值</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="side-panel">
+                <h2>参数控制面板</h2>
+
+                <!-- 三个波形控制面板 -->
+                <div class="superimpose-panel">
+                    <div class="superimpose-toggle">
+                        <span class="toggle-label">波形叠加模式</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="superimpose-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="superimpose-controls" id="superimpose-controls" style="display: block;">
+                        <!-- 波形1控制 -->
+                        <div class="wave-controls">
+                            <div class="wave-title"><span class="wave-color wave1-color"></span>波形1控制</div>
+                            <div class="control-group">
+                                <label for="wave1-amplitude"><span class="symbol-label">I<sub>m1</sub></span> (A)</label>
+                                <div class="slider-container">
+                                    <input type="range" id="wave1-amplitude" min="0.5" max="3" step="0.1" value="1.5">
+                                    <div class="value-display">1.5</div>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label for="wave1-frequency"><span class="symbol-label">f<sub>1</sub></span> (赫兹)</label>
+                                <div class="slider-container">
+                                    <input type="range" id="wave1-frequency" min="0.05" max="2" step="0.01" value="0.5">
+                                    <div class="value-display">0.50</div>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label for="wave1-phase"><span class="symbol-label">φ<sub>1</sub></span> (度)</label>
+                                <div class="slider-container">
+                                    <input type="range" id="wave1-phase" min="0" max="360" step="1" value="0">
+                                    <div class="value-display">0°</div>
+                                </div>
+                            </div>
+                            <div class="wave-buttons">
+                                <button class="wave-btn active" data-wave="sine" data-wave-index="1">正弦波</button>
+                                <button class="wave-btn" data-wave="square" data-wave-index="1">矩形波</button>
+                                <button class="wave-btn" data-wave="triangle" data-wave-index="1">三角波</button>
+                            </div>
+                        </div>
+
+                        <!-- 波形2控制 -->
+                        <div class="wave-controls">
+                            <div class="wave-title"><span class="wave-color wave2-color"></span>波形2控制</div>
+                            <div class="control-group">
+                                <label for="wave2-amplitude"><span class="symbol-label">I<sub>m2</sub></span> (A)</label>
+                                <div class="slider-container">
+                                    <input type="range" id="wave2-amplitude" min="0.5" max="3" step="0.1" value="1.0">
+                                    <div class="value-display">1.0</div>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label for="wave2-frequency"><span class="symbol-label">f<sub>2</sub></span> (赫兹)</label>
+                                <div class="slider-container">
+                                    <input type="range" id="wave2-frequency" min="0.05" max="2" step="0.01" value="1.0">
+                                    <div class="value-display">1.00</div>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label for="wave2-phase"><span class="symbol-label">φ<sub>2</sub></span> (度)</label>
+                                <div class="slider-container">
+                                    <input type="range" id="wave2-phase" min="0" max="360" step="1" value="90">
+                                    <div class="value-display">90°</div>
+                                </div>
+                            </div>
+                            <div class="wave-buttons">
+                                <button class="wave-btn active" data-wave="sine" data-wave-index="2">正弦波</button>
+                                <button class="wave-btn" data-wave="square" data-wave-index="2">矩形波</button>
+                                <button class="wave-btn" data-wave="triangle" data-wave-index="2">三角波</button>
+                            </div>
+                        </div>
+
+                        <!-- 波形3控制 -->
+                        <div class="wave-controls">
+                            <div class="wave-title"><span class="wave-color wave3-color"></span>波形3控制</div>
+                            <div class="control-group">
+                                <label for="wave3-amplitude"><span class="symbol-label">I<sub>m3</sub></span> (A)</label>
+                                <div class="slider-container">
+                                    <input type="range" id="wave3-amplitude" min="0.5" max="3" step="0.1" value="0.8">
+                                    <div class="value-display">0.8</div>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label for="wave3-frequency"><span class="symbol-label">f<sub>3</sub></span> (赫兹)</label>
+                                <div class="slider-container">
+                                    <input type="range" id="wave3-frequency" min="0.05" max="2" step="0.01" value="1.5">
+                                    <div class="value-display">1.50</div>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label for="wave3-phase"><span class="symbol-label">φ<sub>3</sub></span> (度)</label>
+                                <div class="slider-container">
+                                    <input type="range" id="wave3-phase" min="0" max="360" step="1" value="180">
+                                    <div class="value-display">180°</div>
+                                </div>
+                            </div>
+                            <div class="wave-buttons">
+                                <button class="wave-btn active" data-wave="sine" data-wave-index="3">正弦波</button>
+                                <button class="wave-btn" data-wave="square" data-wave-index="3">矩形波</button>
+                                <button class="wave-btn" data-wave="triangle" data-wave-index="3">三角波</button>
+                            </div>
+                        </div>
+
+                        <div class="superimpose-result" id="superimpose-result" style="display: block;">
+                            <div class="wave-title"><span class="wave-color result-color"></span>叠加结果</div>
+                            <div class="result-equation" id="superimpose-equation">
+                                i = i<sub>1</sub> + i<sub>2</sub> + i<sub>3</sub>
+                            </div>
+                            <div class="control-group">
+                                <label for="result-amplitude"><span class="symbol-label">I<sub>mr</sub></span> (A)</label>
+                                <div class="slider-container">
+                                    <div id="result-amplitude" class="value-display">2.30</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="equation-card" style="margin-top: 20px;">
+                    <div class="equation-header">周期性参数关系</div>
+                    <div class="equation-display" style="font-size: 1.3rem;">
+                        <span class="math-expression">T = 2π/ω &nbsp;&nbsp; f = 1/T</span>
+                    </div>
+                    <ul class="param-list">
+                        <li class="param-item">
+                            <span class="param-symbol">T</span>
+                            <span>电流完成一次周期性变化的时间</span>
+                        </li>
+                        <li class="param-item">
+                            <span class="param-symbol">f</span>
+                            <span>每秒重复变化的次数</span>
+                        </li>
+                        <li class="param-item">
+                            <span class="param-symbol">ω</span>
+                            <span>角速度，ω=2πf（弧度/秒）</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="equation-card">
+                    <div class="equation-header">波形特性说明</div>
+                    <ul class="param-list">
+                        <li class="param-item">
+                            <span class="param-symbol">正弦波</span>
+                            <span>自然振荡产生的波形，具有初相位特性</span>
+                        </li>
+                        <li class="param-item">
+                            <span class="param-symbol">矩形波</span>
+                            <span>高低电平间快速切换，初相位对其影响不明显</span>
+                        </li>
+                        <li class="param-item">
+                            <span class="param-symbol">三角波</span>
+                            <span>线性升降形成的波形，初相位对其影响不明显</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增：模态窗口 -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">叠加波形详细视图</h2>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-wave-container" id="modal-wave-container">
+                    <div class="wave-placeholder" id="modal-wave-placeholder">
+                        <p>叠加波形未生成</p>
+                    </div>
+                </div>
+
+                <div class="modal-controls-container">
+                    <!-- 波形1控制面板 -->
+                    <div class="modal-controls-panel">
+                        <div class="modal-controls-title"><span class="wave-color wave1-color"></span>波形1控制</div>
+                        <div class="control-group">
+                            <label for="modal-wave1-amplitude"><span class="symbol-label">I<sub>m1</sub></span> (A)</label>
+                            <div class="slider-container">
+                                <input type="range" id="modal-wave1-amplitude" min="0.5" max="3" step="0.1" value="1.5">
+                                <div class="value-display">1.5</div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label for="modal-wave1-frequency"><span class="symbol-label">f<sub>1</sub></span> (赫兹)</label>
+                            <div class="slider-container">
+                                <input type="range" id="modal-wave1-frequency" min="0.05" max="2" step="0.01" value="0.5">
+                                <div class="value-display">0.50</div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label for="modal-wave1-phase"><span class="symbol-label">φ<sub>1</sub></span> (度)</label>
+                            <div class="slider-container">
+                                <input type="range" id="modal-wave1-phase" min="0" max="360" step="1" value="0">
+                                <div class="value-display">0°</div>
+                            </div>
+                        </div>
+                        <div class="wave-buttons">
+                            <button class="wave-btn active" data-wave="sine" data-wave-index="1" data-modal="true">正弦波</button>
+                            <button class="wave-btn" data-wave="square" data-wave-index="1" data-modal="true">矩形波</button>
+                            <button class="wave-btn" data-wave="triangle" data-wave-index="1" data-modal="true">三角波</button>
+                        </div>
+                    </div>
+
+                    <!-- 波形2控制面板 -->
+                    <div class="modal-controls-panel">
+                        <div class="modal-controls-title"><span class="wave-color wave2-color"></span>波形2控制</div>
+                        <div class="control-group">
+                            <label for="modal-wave2-amplitude"><span class="symbol-label">I<sub>m2</sub></span> (A)</label>
+                            <div class="slider-container">
+                                <input type="range" id="modal-wave2-amplitude" min="0.5" max="3" step="0.1" value="1.0">
+                                <div class="value-display">1.0</div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label for="modal-wave2-frequency"><span class="symbol-label">f<sub>2</sub></span> (赫兹)</label>
+                            <div class="slider-container">
+                                <input type="range" id="modal-wave2-frequency" min="0.05" max="2" step="0.01" value="1.0">
+                                <div class="value-display">1.00</div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label for="modal-wave2-phase"><span class="symbol-label">φ<sub>2</sub></span> (度)</label>
+                            <div class="slider-container">
+                                <input type="range" id="modal-wave2-phase" min="0" max="360" step="1" value="90">
+                                <div class="value-display">90°</div>
+                            </div>
+                        </div>
+                        <div class="wave-buttons">
+                            <button class="wave-btn active" data-wave="sine" data-wave-index="2" data-modal="true">正弦波</button>
+                            <button class="wave-btn" data-wave="square" data-wave-index="2" data-modal="true">矩形波</button>
+                            <button class="wave-btn" data-wave="triangle" data-wave-index="2" data-modal="true">三角波</button>
+                        </div>
+                    </div>
+
+                    <!-- 波形3控制面板 -->
+                    <div class="modal-controls-panel">
+                        <div class="modal-controls-title"><span class="wave-color wave3-color"></span>波形3控制</div>
+                        <div class="control-group">
+                            <label for="modal-wave3-amplitude"><span class="symbol-label">I<sub>m3</sub></span> (A)</label>
+                            <div class="slider-container">
+                                <input type="range" id="modal-wave3-amplitude" min="0.5" max="3" step="0.1" value="0.8">
+                                <div class="value-display">0.8</div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label for="modal-wave3-frequency"><span class="symbol-label">f<sub>3</sub></span> (赫兹)</label>
+                            <div class="slider-container">
+                                <input type="range" id="modal-wave3-frequency" min="0.05" max="2" step="0.01" value="1.5">
+                                <div class="value-display">1.50</div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label for="modal-wave3-phase"><span class="symbol-label">φ<sub>3</sub></span> (度)</label>
+                            <div class="slider-container">
+                                <input type="range" id="modal-wave3-phase" min="0" max="360" step="1" value="180">
+                                <div class="value-display">180°</div>
+                            </div>
+                        </div>
+                        <div class="wave-buttons">
+                            <button class="wave-btn active" data-wave="sine" data-wave-index="3" data-modal="true">正弦波</button>
+                            <button class="wave-btn" data-wave="square" data-wave-index="3" data-modal="true">矩形波</button>
+                            <button class="wave-btn" data-wave="triangle" data-wave-index="3" data-modal="true">三角波</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-wave-info">
+                    <div class="modal-info-card">
+                        <h3>波形1</h3>
+                        <div class="value-display" id="modal-wave1-value">0.00 A</div>
+                    </div>
+                    <div class="modal-info-card">
+                        <h3>波形2</h3>
+                        <div class="value-display" id="modal-wave2-value">0.00 A</div>
+                    </div>
+                    <div class="modal-info-card">
+                        <h3>波形3</h3>
+                        <div class="value-display" id="modal-wave3-value">0.00 A</div>
+                    </div>
+                    <div class="modal-info-card">
+                        <h3>叠加结果</h3>
+                        <div class="value-display" id="modal-result-value">0.00 A</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>时变电流交互学习平台 | 基于Three.js的3D波形可视化 | 电子工程教学辅助系统</p>
+        <p>设计理念：直观呈现数学公式与物理现象的对应关系，增强理解与记忆</p>
+    </footer>
+
+    <script>
+        // 初始化Three.js场景
+        let scenes = [], cameras = [], renderers = [];
+        let waveLines = [], wave1Lines = [], wave2Lines = [], wave3Lines = [], resultLines = [];
+        let wavesGenerated = [false, false, false, false];
+        let isAnimating = false;
+        let animationId = null;
+        let isSuperimposing = true;
+
+        // 模态窗口相关变量
+        let modalScene, modalCamera, modalRenderer;
+        let modalWave1Lines, modalWave2Lines, modalWave3Lines, modalResultLines;
+        let modalAnimationId = null;
+        let isModalAnimating = false;
+
+        // 初始参数
+        let waveTypes = ['sine', 'sine', 'sine'];
+
+        // 三个波形的参数
+        let wave1Amplitude = 1.5;
+        let wave1Frequency = 0.5;
+        let wave1Phase = 0;
+
+        let wave2Amplitude = 1.0;
+        let wave2Frequency = 1.0;
+        let wave2Phase = 90;
+
+        let wave3Amplitude = 0.8;
+        let wave3Frequency = 1.5;
+        let wave3Phase = 180;
+
+        let time = 0;
+
+        // DOM元素
+        const waveContainers = [
+            document.getElementById('wave-container-1'),
+            document.getElementById('wave-container-2'),
+            document.getElementById('wave-container-3'),
+            document.getElementById('wave-container-result')
+        ];
+
+        const generateBtn = document.getElementById('generate-btn');
+        const runBtn = document.getElementById('run-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // 叠加模块DOM元素
+        const superimposeToggle = document.getElementById('superimpose-toggle');
+        const superimposeControls = document.getElementById('superimpose-controls');
+        const superimposeResult = document.getElementById('superimpose-result');
+        const superimposeEquation = document.getElementById('superimpose-equation');
+        const resultAmplitudeDisplay = document.getElementById('result-amplitude');
+
+        // 模态窗口DOM元素
+        const modalOverlay = document.getElementById('modal-overlay');
+        const closeModalBtn = document.getElementById('close-modal');
+        const modalWaveContainer = document.getElementById('modal-wave-container');
+        const modalWavePlaceholder = document.getElementById('modal-wave-placeholder');
+
+        // 初始化Four Three.js场景
+        function initThreeJS() {
+            for (let i = 0; i < 4; i++) {
+                scenes[i] = new THREE.Scene();
+                cameras[i] = new THREE.PerspectiveCamera(75, waveContainers[i].offsetWidth / (waveContainers[i].offsetHeight - 40), 0.1, 1000);
+                renderers[i] = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+
+                // 设置渲染器
+                renderers[i].setSize(waveContainers[i].offsetWidth, waveContainers[i].offsetHeight - 40);
+                renderers[i].setClearColor(0xffffff, 0);
+
+                // 相机位置
+                cameras[i].position.z = 5;
+                cameras[i].position.y = 0.5;
+
+                // 添加光源
+                const ambientLight = new THREE.AmbientLight(0xeeeeee);
+                scenes[i].add(ambientLight);
+
+                const pointLight = new THREE.PointLight(0x6699cc, 1, 100);
+                pointLight.position.set(5, 5, 5);
+                scenes[i].add(pointLight);
+
+                // 创建坐标系
+                createCoordinateSystem(i);
+            }
+        }
+
+        // 初始化模态窗口Three.js场景
+        function initModalThreeJS() {
+            modalScene = new THREE.Scene();
+            modalCamera = new THREE.PerspectiveCamera(75, modalWaveContainer.offsetWidth / modalWaveContainer.offsetHeight, 0.1, 1000);
+            modalRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+
+            // 设置渲染器
+            modalRenderer.setSize(modalWaveContainer.offsetWidth, modalWaveContainer.offsetHeight);
+            modalRenderer.setClearColor(0xffffff, 0);
+
+            // 相机位置
+            modalCamera.position.z = 5;
+            modalCamera.position.y = 0.5;
+
+            // 添加光源
+            const ambientLight = new THREE.AmbientLight(0xeeeeee);
+            modalScene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x6699cc, 1, 100);
+            pointLight.position.set(5, 5, 5);
+            modalScene.add(pointLight);
+
+            // 创建坐标系
+            createModalCoordinateSystem();
+
+            // 清除模态窗口内容并添加渲染器
+            modalWaveContainer.innerHTML = '';
+            modalWaveContainer.appendChild(modalRenderer.domElement);
+            modalWavePlaceholder.style.display = 'none';
+        }
+
+        // 创建坐标系
+        function createCoordinateSystem(index) {
+            // 网格
+            const gridHelper = new THREE.GridHelper(20, 20, 0xccddee, 0xe6eeff);
+            scenes[index].add(gridHelper);
+
+            // 创建坐标轴
+            const axes = new THREE.AxesHelper(5);
+            scenes[index].add(axes);
+        }
+
+        // 创建模态窗口坐标系
+        function createModalCoordinateSystem() {
+            // 网格
+            const gridHelper = new THREE.GridHelper(20, 20, 0xccddee, 0xe6eeff);
+            modalScene.add(gridHelper);
+
+            // 创建坐标轴
+            const axes = new THREE.AxesHelper(5);
+            modalScene.add(axes);
+        }
+
+        // 创建波形线
+        function createWaveLine(points, color, linewidth = 3, sceneIndex) {
+            const material = new THREE.LineBasicMaterial({
+                color,
+                linewidth
+            });
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+            const line = new THREE.Line(geometry, material);
+            if (sceneIndex === 'modal') {
+                modalScene.add(line);
+            } else {
+                scenes[sceneIndex].add(line);
+            }
+            return line;
+        }
+
+        // 波形生成函数
+        function generateSineWave(amplitude, frequency, phaseOffset, timeOffset, sceneIndex) {
+            const points = [];
+            const segments = 100;
+
+            for (let i = 0; i <= segments; i++) {
+                const x = (i / segments) * 12 - 6;
+                const t = timeOffset + x * 0.5;
+                const y = amplitude * Math.sin(2 * Math.PI * frequency * t + phaseOffset * Math.PI / 180);
+                points.push(new THREE.Vector3(x, y, 0));
+            }
+
+            return points;
+        }
+
+        function generateSquareWave(amplitude, frequency, timeOffset, sceneIndex) {
+            const points = [];
+            const segments = 100;
+
+            for (let i = 0; i <= segments; i++) {
+                const x = (i / segments) * 12 - 6;
+                const t = timeOffset + x * 0.5;
+                // 矩形波不应用初相位，因为对其影响不明显
+                const value = Math.sin(2 * Math.PI * frequency * t) > 0 ? amplitude : -amplitude;
+                points.push(new THREE.Vector3(x, value, 0));
+            }
+
+            return points;
+        }
+
+        function generateTriangleWave(amplitude, frequency, timeOffset, sceneIndex) {
+            const points = [];
+            const segments = 100;
+
+            for (let i = 0; i <= segments; i++) {
+                const x = (i / segments) * 12 - 6;
+                const t = timeOffset + x * 0.5;
+
+                // 三角波不应用初相位，因为对其影响不明显
+                const value = (2 * amplitude / Math.PI) * Math.asin(Math.sin(2 * Math.PI * frequency * t));
+                points.push(new THREE.Vector3(x, value, 0));
+            }
+
+            return points;
+        }
+
+        // 计算叠加波形的结果振幅
+        function calculateResultAmplitude() {
+            // 简单计算三个正弦波叠加的振幅（不完全准确，但作为参考）
+            // 这里使用简化的计算方法，实际叠加振幅计算更复杂
+            return (wave1Amplitude + wave2Amplitude + wave3Amplitude).toFixed(2);
+        }
+
+        // 更新显示值
+        function updateDisplayValues() {
+            // 更新各波形的瞬时值
+            if (wavesGenerated[0]) {
+                let instantValue1;
+                if (waveTypes[0] === 'sine') {
+                    instantValue1 = wave1Amplitude * Math.sin(2 * Math.PI * wave1Frequency * time + wave1Phase * Math.PI / 180);
+                } else if (waveTypes[0] === 'square') {
+                    instantValue1 = Math.sin(2 * Math.PI * wave1Frequency * time) > 0 ? wave1Amplitude : -wave1Amplitude;
+                } else { // triangle
+                    instantValue1 = (2 * wave1Amplitude / Math.PI) * Math.asin(Math.sin(2 * Math.PI * wave1Frequency * time));
+                }
+                document.getElementById('wave1-value').textContent = instantValue1.toFixed(2) + ' A';
+            }
+
+            if (wavesGenerated[1]) {
+                let instantValue2;
+                if (waveTypes[1] === 'sine') {
+                    instantValue2 = wave2Amplitude * Math.sin(2 * Math.PI * wave2Frequency * time + wave2Phase * Math.PI / 180);
+                } else if (waveTypes[1] === 'square') {
+                    instantValue2 = Math.sin(2 * Math.PI * wave2Frequency * time) > 0 ? wave2Amplitude : -wave2Amplitude;
+                } else { // triangle
+                    instantValue2 = (2 * wave2Amplitude / Math.PI) * Math.asin(Math.sin(2 * Math.PI * wave2Frequency * time));
+                }
+                document.getElementById('wave2-value').textContent = instantValue2.toFixed(2) + ' A';
+            }
+
+            if (wavesGenerated[2]) {
+                let instantValue3;
+                if (waveTypes[2] === 'sine') {
+                    instantValue3 = wave3Amplitude * Math.sin(2 * Math.PI * wave3Frequency * time + wave3Phase * Math.PI / 180);
+                } else if (waveTypes[2] === 'square') {
+                    instantValue3 = Math.sin(2 * Math.PI * wave3Frequency * time) > 0 ? wave3Amplitude : -wave3Amplitude;
+                } else { // triangle
+                    instantValue3 = (2 * wave3Amplitude / Math.PI) * Math.asin(Math.sin(2 * Math.PI * wave3Frequency * time));
+                }
+                document.getElementById('wave3-value').textContent = instantValue3.toFixed(2) + ' A';
+            }
+
+            // 更新叠加波形的结果振幅
+            if (isSuperimposing) {
+                resultAmplitudeDisplay.textContent = calculateResultAmplitude();
+
+                // 更新叠加结果的瞬时值
+                if (wavesGenerated[3]) {
+                    let instantValue1, instantValue2, instantValue3;
+
+                    // 计算三个波形的瞬时值
+                    if (waveTypes[0] === 'sine') {
+                        instantValue1 = wave1Amplitude * Math.sin(2 * Math.PI * wave1Frequency * time + wave1Phase * Math.PI / 180);
+                    } else if (waveTypes[0] === 'square') {
+                        instantValue1 = Math.sin(2 * Math.PI * wave1Frequency * time) > 0 ? wave1Amplitude : -wave1Amplitude;
+                    } else { // triangle
+                        instantValue1 = (2 * wave1Amplitude / Math.PI) * Math.asin(Math.sin(2 * Math.PI * wave1Frequency * time));
+                    }
+
+                    if (waveTypes[1] === 'sine') {
+                        instantValue2 = wave2Amplitude * Math.sin(2 * Math.PI * wave2Frequency * time + wave2Phase * Math.PI / 180);
+                    } else if (waveTypes[1] === 'square') {
+                        instantValue2 = Math.sin(2 * Math.PI * wave2Frequency * time) > 0 ? wave2Amplitude : -wave2Amplitude;
+                    } else { // triangle
+                        instantValue2 = (2 * wave2Amplitude / Math.PI) * Math.asin(Math.sin(2 * Math.PI * wave2Frequency * time));
+                    }
+
+                    if (waveTypes[2] === 'sine') {
+                        instantValue3 = wave3Amplitude * Math.sin(2 * Math.PI * wave3Frequency * time + wave3Phase * Math.PI / 180);
+                    } else if (waveTypes[2] === 'square') {
+                        instantValue3 = Math.sin(2 * Math.PI * wave3Frequency * time) > 0 ? wave3Amplitude : -wave3Amplitude;
+                    } else { // triangle
+                        instantValue3 = (2 * wave3Amplitude / Math.PI) * Math.asin(Math.sin(2 * Math.PI * wave3Frequency * time));
+                    }
+
+                    const resultValue = instantValue1 + instantValue2 + instantValue3;
+                    document.getElementById('result-value').textContent = resultValue.toFixed(2) + ' A';
+
+                    // 更新模态窗口中的瞬时值
+                    if (modalOverlay.style.display === 'flex') {
+                        document.getElementById('modal-wave1-value').textContent = instantValue1.toFixed(2) + ' A';
+                        document.getElementById('modal-wave2-value').textContent = instantValue2.toFixed(2) + ' A';
+                        document.getElementById('modal-wave3-value').textContent = instantValue3.toFixed(2) + ' A';
+                        document.getElementById('modal-result-value').textContent = resultValue.toFixed(2) + ' A';
+                    }
+                }
+            }
+        }
+
+        // 更新波形公式显示
+        function updateWaveEquation() {
+            // 更新叠加波形公式
+            if (isSuperimposing) {
+                superimposeEquation.innerHTML =
+                    "i = i<sub>1</sub> + i<sub>2</sub> + i<sub>3</sub>";
+            }
+        }
+
+        // 生成波形函数
+        function generateWave() {
+            // 清除之前的波形线
+            for (let i = 0; i < 4; i++) {
+                if (waveLines[i]) scenes[i].remove(waveLines[i]);
+                if (wave1Lines[i]) scenes[i].remove(wave1Lines[i]);
+                if (wave2Lines[i]) scenes[i].remove(wave2Lines[i]);
+                if (wave3Lines[i]) scenes[i].remove(wave3Lines[i]);
+                if (resultLines[i]) scenes[i].remove(resultLines[i]);
+            }
+
+            // 生成三个独立波形
+            for (let i = 0; i < 3; i++) {
+                if (!wavesGenerated[i]) continue;
+
+                let points;
+                let color;
+
+                switch(i) {
+                    case 0:
+                        color = 0x0066cc;
+                        if (waveTypes[0] === 'sine') {
+                            points = generateSineWave(wave1Amplitude, wave1Frequency, wave1Phase, time, i);
+                        } else if (waveTypes[0] === 'square') {
+                            points = generateSquareWave(wave1Amplitude, wave1Frequency, time, i);
+                        } else { // triangle
+                            points = generateTriangleWave(wave1Amplitude, wave1Frequency, time, i);
+                        }
+                        break;
+                    case 1:
+                        color = 0xcc3366;
+                        if (waveTypes[1] === 'sine') {
+                            points = generateSineWave(wave2Amplitude, wave2Frequency, wave2Phase, time, i);
+                        } else if (waveTypes[1] === 'square') {
+                            points = generateSquareWave(wave2Amplitude, wave2Frequency, time, i);
+                        } else { // triangle
+                            points = generateTriangleWave(wave2Amplitude, wave2Frequency, time, i);
+                        }
+                        break;
+                    case 2:
+                        color = 0xcc9900;
+                        if (waveTypes[2] === 'sine') {
+                            points = generateSineWave(wave3Amplitude, wave3Frequency, wave3Phase, time, i);
+                        } else if (waveTypes[2] === 'square') {
+                            points = generateSquareWave(wave3Amplitude, wave3Frequency, time, i);
+                        } else { // triangle
+                            points = generateTriangleWave(wave3Amplitude, wave3Frequency, time, i);
+                        }
+                        break;
+                }
+
+                waveLines[i] = createWaveLine(points, color, 3, i);
+            }
+
+            // 生成叠加波形
+            if (wavesGenerated[3] && isSuperimposing) {
+                // 生成三个原始波形
+                const wave1Points = generateSineWave(wave1Amplitude, wave1Frequency, wave1Phase, time, 3);
+                const wave2Points = generateSineWave(wave2Amplitude, wave2Frequency, wave2Phase, time, 3);
+                const wave3Points = generateSineWave(wave3Amplitude, wave3Frequency, wave3Phase, time, 3);
+
+                // 计算叠加结果
+                const resultPoints = [];
+                for (let i = 0; i < wave1Points.length; i++) {
+                    const x = wave1Points[i].x;
+                    const y = wave1Points[i].y + wave2Points[i].y + wave3Points[i].y;
+                    resultPoints.push(new THREE.Vector3(x, y, 0));
+                }
+
+                // 创建波形线
+                wave1Lines[3] = createWaveLine(wave1Points, 0x0066cc, 1, 3);
+                wave2Lines[3] = createWaveLine(wave2Points, 0xcc3366, 1, 3);
+                wave3Lines[3] = createWaveLine(wave3Points, 0xcc9900, 1, 3);
+                resultLines[3] = createWaveLine(resultPoints, 0x00aa88, 3, 3);
+            }
+
+            updateDisplayValues();
+
+            // 渲染一次以显示静止波形
+            if (!isAnimating) {
+                for (let i = 0; i < 4; i++) {
+                    if (wavesGenerated[i]) {
+                        renderers[i].render(scenes[i], cameras[i]);
+                    }
+                }
+            }
+        }
+
+        // 生成模态窗口波形
+        function generateModalWave() {
+            // 清除之前的波形线
+            if (modalWave1Lines) modalScene.remove(modalWave1Lines);
+            if (modalWave2Lines) modalScene.remove(modalWave2Lines);
+            if (modalWave3Lines) modalScene.remove(modalWave3Lines);
+            if (modalResultLines) modalScene.remove(modalResultLines);
+
+            // 生成三个原始波形
+            const wave1Points = generateSineWave(wave1Amplitude, wave1Frequency, wave1Phase, time, 'modal');
+            const wave2Points = generateSineWave(wave2Amplitude, wave2Frequency, wave2Phase, time, 'modal');
+            const wave3Points = generateSineWave(wave3Amplitude, wave3Frequency, wave3Phase, time, 'modal');
+
+            // 计算叠加结果
+            const resultPoints = [];
+            for (let i = 0; i < wave1Points.length; i++) {
+                const x = wave1Points[i].x;
+                const y = wave1Points[i].y + wave2Points[i].y + wave3Points[i].y;
+                resultPoints.push(new THREE.Vector3(x, y, 0));
+            }
+
+            // 创建波形线
+            modalWave1Lines = createWaveLine(wave1Points, 0x0066cc, 2, 'modal');
+            modalWave2Lines = createWaveLine(wave2Points, 0xcc3366, 2, 'modal');
+            modalWave3Lines = createWaveLine(wave3Points, 0xcc9900, 2, 'modal');
+            modalResultLines = createWaveLine(resultPoints, 0x00aa88, 4, 'modal');
+
+            // 渲染模态窗口
+            modalRenderer.render(modalScene, modalCamera);
+        }
+
+        // 动画循环
+        function animate() {
+            if (!isAnimating) return;
+
+            animationId = requestAnimationFrame(animate);
+            time += 0.01;
+
+            generateWave();
+
+            for (let i = 0; i < 4; i++) {
+                if (wavesGenerated[i]) {
+                    renderers[i].render(scenes[i], cameras[i]);
+                }
+            }
+        }
+
+        // 模态窗口动画循环
+        function animateModal() {
+            if (!isModalAnimating) return;
+
+            modalAnimationId = requestAnimationFrame(animateModal);
+            generateModalWave();
+            modalRenderer.render(modalScene, modalCamera);
+        }
+
+        // 打开模态窗口
+        function openModal() {
+            if (!wavesGenerated[3]) return;
+
+            modalOverlay.style.display = 'flex';
+            initModalThreeJS();
+
+            // 同步模态窗口控制器的值
+            document.getElementById('modal-wave1-amplitude').value = wave1Amplitude;
+            document.getElementById('modal-wave1-frequency').value = wave1Frequency;
+            document.getElementById('modal-wave1-phase').value = wave1Phase;
+            document.getElementById('modal-wave2-amplitude').value = wave2Amplitude;
+            document.getElementById('modal-wave2-frequency').value = wave2Frequency;
+            document.getElementById('modal-wave2-phase').value = wave2Phase;
+            document.getElementById('modal-wave3-amplitude').value = wave3Amplitude;
+            document.getElementById('modal-wave3-frequency').value = wave3Frequency;
+            document.getElementById('modal-wave3-phase').value = wave3Phase;
+
+            // 更新模态窗口控制器的显示值
+            document.querySelectorAll('#modal-wave1-amplitude + .value-display')[0].textContent = wave1Amplitude.toFixed(1);
+            document.querySelectorAll('#modal-wave1-frequency + .value-display')[0].textContent = wave1Frequency.toFixed(2);
+            document.querySelectorAll('#modal-wave1-phase + .value-display')[0].textContent = wave1Phase + '°';
+            document.querySelectorAll('#modal-wave2-amplitude + .value-display')[0].textContent = wave2Amplitude.toFixed(1);
+            document.querySelectorAll('#modal-wave2-frequency + .value-display')[0].textContent = wave2Frequency.toFixed(2);
+            document.querySelectorAll('#modal-wave2-phase + .value-display')[0].textContent = wave2Phase + '°';
+            document.querySelectorAll('#modal-wave3-amplitude + .value-display')[0].textContent = wave3Amplitude.toFixed(1);
+            document.querySelectorAll('#modal-wave3-frequency + .value-display')[0].textContent = wave3Frequency.toFixed(2);
+            document.querySelectorAll('#modal-wave3-phase + .value-display')[0].textContent = wave3Phase + '°';
+
+            // 同步波形按钮状态
+            document.querySelectorAll('.modal-controls-panel .wave-btn').forEach(btn => {
+                const waveIndex = parseInt(btn.dataset.waveIndex) - 1;
+                if (waveTypes[waveIndex] === btn.dataset.wave) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            generateModalWave();
+
+            // 启动模态窗口动画
+            isModalAnimating = true;
+            animateModal();
+        }
+
+        // 关闭模态窗口
+        function closeModal() {
+            modalOverlay.style.display = 'none';
+            isModalAnimating = false;
+            if (modalAnimationId) {
+                cancelAnimationFrame(modalAnimationId);
+                modalAnimationId = null;
+            }
+        }
+
+        // 生成波形按钮事件
+        generateBtn.addEventListener('click', function() {
+            if (scenes.length === 0) {
+                initThreeJS();
+            }
+
+            for (let i = 0; i < 4; i++) {
+                if (!wavesGenerated[i]) {
+                    waveContainers[i].innerHTML = '';
+                    waveContainers[i].appendChild(renderers[i].domElement);
+                    wavesGenerated[i] = true;
+                    waveContainers[i].querySelector('.wave-placeholder').style.display = 'none';
+                }
+            }
+
+            // 启用运行按钮
+            runBtn.disabled = false;
+
+            // 重置时间，生成静止波形
+            time = 0;
+            isAnimating = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+
+            generateWave();
+            runBtn.textContent = "运行所有波形";
+        });
+
+        // 运行按钮事件
+        runBtn.addEventListener('click', function() {
+            if (!wavesGenerated[0]) return;
+
+            if (isAnimating) {
+                // 停止动画
+                isAnimating = false;
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+                runBtn.textContent = "运行所有波形";
+            } else {
+                // 开始动画
+                isAnimating = true;
+                animate();
+                runBtn.textContent = "暂停所有波形";
+            }
+        });
+
+        // 重置按钮事件
+        resetBtn.addEventListener('click', function() {
+            time = 0;
+            isAnimating = false;
+
+            // 重置叠加波形参数
+            wave1Amplitude = 1.5;
+            wave1Frequency = 0.5;
+            wave1Phase = 0;
+            wave2Amplitude = 1.0;
+            wave2Frequency = 1.0;
+            wave2Phase = 90;
+            wave3Amplitude = 0.8;
+            wave3Frequency = 1.5;
+            wave3Phase = 180;
+
+            // 停止动画
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+
+            // 重置滑块值
+            document.getElementById('wave1-amplitude').value = wave1Amplitude;
+            document.getElementById('wave1-frequency').value = wave1Frequency;
+            document.getElementById('wave1-phase').value = wave1Phase;
+            document.getElementById('wave2-amplitude').value = wave2Amplitude;
+            document.getElementById('wave2-frequency').value = wave2Frequency;
+            document.getElementById('wave2-phase').value = wave2Phase;
+            document.getElementById('wave3-amplitude').value = wave3Amplitude;
+            document.getElementById('wave3-frequency').value = wave3Frequency;
+            document.getElementById('wave3-phase').value = wave3Phase;
+
+            // 重置滑块显示
+            document.querySelectorAll('.slider-container .value-display')[0].textContent = wave1Amplitude.toFixed(1);
+            document.querySelectorAll('.slider-container .value-display')[1].textContent = wave1Frequency.toFixed(2);
+            document.querySelectorAll('.slider-container .value-display')[2].textContent = wave1Phase + '°';
+            document.querySelectorAll('.slider-container .value-display')[3].textContent = wave2Amplitude.toFixed(1);
+            document.querySelectorAll('.slider-container .value-display')[4].textContent = wave2Frequency.toFixed(2);
+            document.querySelectorAll('.slider-container .value-display')[5].textContent = wave2Phase + '°';
+            document.querySelectorAll('.slider-container .value-display')[6].textContent = wave3Amplitude.toFixed(1);
+            document.querySelectorAll('.slider-container .value-display')[7].textContent = wave3Frequency.toFixed(2);
+            document.querySelectorAll('.slider-container .value-display')[8].textContent = wave3Phase + '°';
+
+            updateDisplayValues();
+            updateWaveEquation();
+
+            // 重置波形
+            for (let i = 0; i < 4; i++) {
+                if (wavesGenerated[i]) {
+                    wavesGenerated[i] = false;
+                    waveContainers[i].innerHTML = '';
+                    const placeholderDiv = document.createElement('div');
+                    placeholderDiv.className = 'wave-placeholder';
+                    if (i < 3) {
+                        placeholderDiv.innerHTML = `<p>波形${i+1}未生成</p>`;
+                    } else {
+                        placeholderDiv.innerHTML = '<p>叠加波形未生成</p>';
+                    }
+                    waveContainers[i].appendChild(placeholderDiv);
+                }
+            }
+
+            // 禁用运行按钮
+            runBtn.disabled = true;
+            runBtn.textContent = "运行所有波形";
+
+            // 重置瞬时值显示
+            document.getElementById('wave1-value').textContent = '0.00 A';
+            document.getElementById('wave2-value').textContent = '0.00 A';
+            document.getElementById('wave3-value').textContent = '0.00 A';
+            document.getElementById('result-value').textContent = '0.00 A';
+        });
+
+        // 绑定UI更新
+        function setupSliderEvents(sliderId, paramSetter, displayIndex, modal = false) {
+            const slider = document.getElementById(sliderId);
+            slider.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                paramSetter(value);
+
+                // 更新显示值
+                const displayElement = document.querySelectorAll(`#${sliderId} + .value-display`)[0];
+                if (displayElement) {
+                    if (sliderId.includes('phase')) {
+                        displayElement.textContent = value + '°';
+                    } else if (sliderId.includes('frequency')) {
+                        displayElement.textContent = value.toFixed(2);
+                    } else {
+                        displayElement.textContent = value.toFixed(1);
+                    }
+                }
+
+                updateDisplayValues();
+                updateWaveEquation();
+
+                if (wavesGenerated[0] && !isAnimating) generateWave();
+                if (modalOverlay.style.display === 'flex') generateModalWave();
+            });
+        }
+
+        // 设置主窗口滑块事件
+        setupSliderEvents('wave1-amplitude', (value) => { wave1Amplitude = value; }, 0);
+        setupSliderEvents('wave1-frequency', (value) => { wave1Frequency = value; }, 1);
+        setupSliderEvents('wave1-phase', (value) => { wave1Phase = value; }, 2);
+        setupSliderEvents('wave2-amplitude', (value) => { wave2Amplitude = value; }, 3);
+        setupSliderEvents('wave2-frequency', (value) => { wave2Frequency = value; }, 4);
+        setupSliderEvents('wave2-phase', (value) => { wave2Phase = value; }, 5);
+        setupSliderEvents('wave3-amplitude', (value) => { wave3Amplitude = value; }, 6);
+        setupSliderEvents('wave3-frequency', (value) => { wave3Frequency = value; }, 7);
+        setupSliderEvents('wave3-phase', (value) => { wave3Phase = value; }, 8);
+
+        // 设置模态窗口滑块事件
+        setupSliderEvents('modal-wave1-amplitude', (value) => { wave1Amplitude = value; }, 0, true);
+        setupSliderEvents('modal-wave1-frequency', (value) => { wave1Frequency = value; }, 1, true);
+        setupSliderEvents('modal-wave1-phase', (value) => { wave1Phase = value; }, 2, true);
+        setupSliderEvents('modal-wave2-amplitude', (value) => { wave2Amplitude = value; }, 3, true);
+        setupSliderEvents('modal-wave2-frequency', (value) => { wave2Frequency = value; }, 4, true);
+        setupSliderEvents('modal-wave2-phase', (value) => { wave2Phase = value; }, 5, true);
+        setupSliderEvents('modal-wave3-amplitude', (value) => { wave3Amplitude = value; }, 6, true);
+        setupSliderEvents('modal-wave3-frequency', (value) => { wave3Frequency = value; }, 7, true);
+        setupSliderEvents('modal-wave3-phase', (value) => { wave3Phase = value; }, 8, true);
+
+        // 波形切换
+        function setupWaveButtonEvents(buttons, modal = false) {
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const waveIndex = parseInt(this.dataset.waveIndex) - 1;
+                    const waveType = this.dataset.wave;
+
+                    // 更新当前波形的按钮状态
+                    const container = modal ?
+                        this.closest('.modal-controls-panel') :
+                        document.querySelector(`.wave-controls:nth-child(${waveIndex + 1})`);
+
+                    container.querySelectorAll('.wave-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // 更新波形类型
+                    waveTypes[waveIndex] = waveType;
+
+                    if (wavesGenerated[waveIndex] && !isAnimating) {
+                        generateWave();
+                    }
+
+                    if (modalOverlay.style.display === 'flex') {
+                        generateModalWave();
+                    }
+                });
+            });
+        }
+
+        // 设置主窗口波形按钮事件
+        setupWaveButtonEvents(document.querySelectorAll('.side-panel .wave-btn'));
+
+        // 设置模态窗口波形按钮事件
+        setupWaveButtonEvents(document.querySelectorAll('.modal-controls-panel .wave-btn'), true);
+
+        // 叠加开关事件
+        superimposeToggle.addEventListener('change', function() {
+            isSuperimposing = this.checked;
+
+            if (isSuperimposing) {
+                superimposeControls.style.display = 'block';
+                superimposeResult.style.display = 'block';
+                updateWaveEquation();
+            } else {
+                superimposeControls.style.display = 'none';
+                superimposeResult.style.display = 'none';
+            }
+
+            if (wavesGenerated[3] && !isAnimating) {
+                generateWave();
+            }
+        });
+
+        // 叠加波形区域点击事件
+        document.getElementById('wave-cell-result').addEventListener('click', openModal);
+
+        // 关闭模态窗口事件
+        closeModalBtn.addEventListener('click', closeModal);
+
+        // 点击模态窗口外部关闭
+        modalOverlay.addEventListener('click', function(e) {
+            if (e.target === modalOverlay) {
+                closeModal();
+            }
+        });
+
+        // 初始设置
+        updateDisplayValues();
+        updateWaveEquation();
+
+        // 响应窗口大小变化
+        window.addEventListener('resize', () => {
+            if (renderers.length === 0) return;
+
+            for (let i = 0; i < 4; i++) {
+                const containerWidth = waveContainers[i].offsetWidth;
+                const containerHeight = waveContainers[i].offsetHeight - 40;
+                renderers[i].setSize(containerWidth, containerHeight);
+
+                if (cameras[i]) {
+                    cameras[i].aspect = containerWidth / containerHeight;
+                    cameras[i].updateProjectionMatrix();
+                }
+            }
+
+            // 重新渲染波形（如果已生成）
+            if (wavesGenerated[0] && !isAnimating) {
+                generateWave();
+            }
+
+            // 重新调整模态窗口大小
+            if (modalOverlay.style.display === 'flex' && modalRenderer) {
+                const modalWidth = modalWaveContainer.offsetWidth;
+                const modalHeight = modalWaveContainer.offsetHeight;
+                modalRenderer.setSize(modalWidth, modalHeight);
+                modalCamera.aspect = modalWidth / modalHeight;
+                modalCamera.updateProjectionMatrix();
+                modalRenderer.render(modalScene, modalCamera);
+            }
+        });
+    </script>
+</body>
+</html>

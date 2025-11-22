@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互感现象交互式学习平台</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #ffffff; /* 白色背景 */
+            color: #333; /* 深色文字 */
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+        }
+        
+        .visualization-section {
+            flex: 1;
+            min-width: 500px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .controls-section {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .formula-section {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #1a73e8; /* 蓝色标题 */
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title svg {
+            margin-right: 10px;
+            fill: #1a73e8;
+        }
+        
+        #three-container {
+            width: 100%;
+            height: 500px;
+            background: rgba(240, 240, 240, 0.8);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #ddd;
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(240, 245, 255, 0.7);
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .control-title {
+            margin-bottom: 15px;
+            color: #1a73e8;
+            font-weight: 500;
+        }
+        
+        .slider-container {
+            margin: 15px 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            color: #444;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            background: rgba(26, 115, 232, 0.2);
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #1a73e8;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(26, 115, 232, 0.5);
+        }
+        
+        .value-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .switch-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #1a73e8;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+        
+        .switch-label {
+            font-size: 0.9rem;
+            margin-top: 5px;
+            text-align: center;
+            color: #555;
+        }
+        
+        .formula-display {
+            background: rgba(240, 245, 255, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Cambria Math', serif;
+            margin: 15px 0;
+            line-height: 2;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .formula {
+            font-size: 1.4rem;
+            text-align: center;
+            padding: 15px;
+            background: rgba(240, 245, 255, 0.7);
+            border-radius: 8px;
+            margin: 10px 0;
+            overflow-x: auto;
+            border: 1px solid #e0e0e0;
+            color: #333;
+        }
+        
+        .explanation {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(240, 245, 255, 0.5);
+            border-left: 4px solid #1a73e8;
+            border-radius: 0 8px 8px 0;
+            color: #444;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 8px;
+        }
+        
+        .coil-control {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background: linear-gradient(to right, #1a73e8, #4285f4);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(26, 115, 232, 0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(26, 115, 232, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-alt {
+            background: linear-gradient(to right, #f57c00, #fb8c00);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .positive { background-color: #34a853; }
+        .negative { background-color: #ea4335; }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .visualization-section, .controls-section {
+                min-width: 100%;
+            }
+        }
+        
+      
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        
+        <div class="content">
+            <section class="visualization-section">
+                <h2 class="section-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                    互感线圈3D可视化
+                </h2>
+                <div id="three-container"></div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #34a853;"></div>
+                        <span>电流方向</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #f57c00;"></div>
+                        <span>互感电动势</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ea4335;"></div>
+                        <span>自感电动势</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #9c27b0;"></div>
+                        <span>总感应电动势</span>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="controls-section">
+                <h2 class="section-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    实验控制面板
+                </h2>
+                
+                <div class="control-group">
+                    <h3 class="control-title">线圈参数设置</h3>
+                    
+                    <div class="slider-container">
+                        <label for="mutual-inductance">互感系数 (M): <span id="m-value">0.8</span> H</label>
+                        <input type="range" id="mutual-inductance" min="0.1" max="2" step="0.1" value="0.8">
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label for="self-inductance1">线圈1自感系数 (L₁): <span id="l1-value">1.5</span> H</label>
+                        <input type="range" id="self-inductance1" min="0.5" max="3" step="0.1" value="1.5">
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label for="self-inductance2">线圈2自感系数 (L₂): <span id="l2-value">1.2</span> H</label>
+                        <input type="range" id="self-inductance2" min="0.5" max="3" step="0.1" value="1.2">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3 class="control-title">电流变化控制</h3>
+                    
+                    <div class="slider-container">
+                        <label for="di1">电流i₁变化率 (di₁/dt): <span id="di1-value">0.5</span> A/s</label>
+                        <input type="range" id="di1" min="-2" max="2" step="0.1" value="0.5">
+                        <div class="value-display">
+                            <span>减少</span>
+                            <span>增加</span>
+                        </div>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label for="di2">电流i₂变化率 (di₂/dt): <span id="di2-value">0.3</span> A/s</label>
+                        <input type="range" id="di2" min="-2" max="2" step="0.1" value="0.3">
+                        <div class="value-display">
+                            <span>减少</span>
+                            <span>增加</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3 class="control-title">极性端与电流方向</h3>
+                    
+                    <div class="switch-container">
+                        <div>
+                            <label class="switch">
+                                <input type="checkbox" id="polarity-toggle">
+                                <span class="slider"></span>
+                            </label>
+                            <div class="switch-label">极性端模式</div>
+                            <div id="polarity-status">当前: <span class="status-indicator positive"></span>同极性端</div>
+                        </div>
+                        
+                        <div>
+                            <label class="switch">
+                                <input type="checkbox" id="current1-toggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <div class="switch-label">线圈1电流方向</div>
+                            <div id="current1-status">当前: <span class="status-indicator positive"></span>指向同极性端</div>
+                        </div>
+                        
+                        <div>
+                            <label class="switch">
+                                <input type="checkbox" id="current2-toggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <div class="switch-label">线圈2电流方向</div>
+                            <div id="current2-status">当前: <span class="status-indicator positive"></span>指向同极性端</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="coil-control">
+                    <button id="reset-btn" class="btn">重置实验</button>
+                    <button id="auto-btn" class="btn btn-alt">自动演示模式</button>
+                </div>
+            </section>
+            
+            <section class="formula-section">
+                <h2 class="section-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="10" y1="13" x2="12" y2="13"></line>
+                        <line x1="10" y1="17" x2="16" y2="17"></line>
+                        <line x1="10" y1="9" x2="16" y2="9"></line>
+                    </svg>
+                    互感原理与公式分析
+                </h2>
+                
+                <div class="formula-display">
+                    <h3>互感电动势公式</h3>
+                    <div class="formula" id="mutual-emf-formula">
+                        e₁₂ = -M · di₂/dt &emsp; &emsp; e₂₁ = -M · di₁/dt
+                    </div>
+                    <div class="explanation">
+                        当两个线圈的电流参考方向均指向同极性端时，互感电动势公式如上所示。
+                        负号表示互感电动势的方向总是阻碍电流的变化（楞次定律）。
+                    </div>
+                    
+                    <h3>线圈端电压公式</h3>
+                    <div class="formula" id="voltage-formula">
+                        u<sub>L1</sub> = -(e₁₁ + e₁₂) &emsp; &emsp; u<sub>L2</sub> = -(e₂₂ + e₂₁)
+                    </div>
+                    <div class="explanation">
+                        线圈两端的电压等于自感电动势与互感电动势之和的负值（根据无源惯例）。
+                        其中 e₁₁ = -L₁·di₁/dt，e₂₂ = -L₂·di₂/dt
+                    </div>
+                    
+                    <h3>当前计算结果</h3>
+                    <div class="formula">
+                        <table style="width:100%; border-collapse: collapse; text-align: center;">
+                            <tr>
+                                <th style="padding: 10px; border-bottom: 1px solid #1a73e8;">物理量</th>
+                                <th style="padding: 10px; border-bottom: 1px solid #1a73e8;">线圈1</th>
+                                <th style="padding: 10px; border-bottom: 1px solid #1a73e8;">线圈2</th>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;">互感电动势</td>
+                                <td style="padding: 10px;" id="emf12-value">-0.24 V</td>
+                                <td style="padding: 10px;" id="emf21-value">-0.40 V</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;">自感电动势</td>
+                                <td style="padding: 10px;" id="emf11-value">-0.75 V</td>
+                                <td style="padding: 10px;" id="emf22-value">-0.36 V</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;">总感应电动势</td>
+                                <td style="padding: 10px;" id="emf1-total">-0.99 V</td>
+                                <td style="padding: 10px;" id="emf2-total">-0.76 V</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;">线圈端电压</td>
+                                <td style="padding: 10px;" id="voltage1-value">0.99 V</td>
+                                <td style="padding: 10px;" id="voltage2-value">0.76 V</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let scene, camera, renderer, controls;
+        let coil1, coil2, dot1, dot2;
+        let currentArrow1, currentArrow2, mutualEMF1, mutualEMF2, selfEMF1, selfEMF2, totalEMF1, totalEMF2;
+        let M = 0.8, L1 = 1.5, L2 = 1.2;
+        let di1 = 0.5, di2 = 0.3;
+        let polarityMode = 'same'; // 'same' or 'different'
+        let currentDir1 = 'positive'; // 'positive' or 'negative'
+        let currentDir2 = 'positive'; // 'positive' or 'negative'
+        let autoMode = false;
+        
+        // 初始化Three.js场景
+        function initThreeJS() {
+            // 创建场景
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f0f0);
+            
+            // 创建相机
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 15);
+            
+            // 创建渲染器
+            const container = document.getElementById('three-container');
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            
+            // 添加轨道控制
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // 添加灯光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+            
+            // 创建坐标系
+            const axesHelper = new THREE.AxesHelper(5);
+            scene.add(axesHelper);
+            
+            // 创建线圈
+            createCoils();
+            
+            // 创建箭头
+            createArrows();
+            
+            // 添加窗口大小变化监听
+            window.addEventListener('resize', onWindowResize);
+            
+            // 开始动画循环
+            animate();
+        }
+        
+        // 创建线圈
+        function createCoils() {
+            // 线圈1
+            const coilGeometry1 = new THREE.TorusGeometry(2, 0.3, 16, 100);
+            const coilMaterial1 = new THREE.MeshPhongMaterial({ 
+                color: 0x1a73e8,
+                emissive: 0x072534,
+                specular: 0xffffff,
+                shininess: 50,
+                wireframe: false
+            });
+            coil1 = new THREE.Mesh(coilGeometry1, coilMaterial1);
+            coil1.position.set(-3, 0, 0);
+            coil1.rotation.x = Math.PI / 2;
+            scene.add(coil1);
+            
+            // 线圈2
+            const coilGeometry2 = new THREE.TorusGeometry(2, 0.3, 16, 100);
+            const coilMaterial2 = new THREE.MeshPhongMaterial({ 
+                color: 0xf57c00,
+                emissive: 0x2c0b0e,
+                specular: 0xffffff,
+                shininess: 50,
+                wireframe: false
+            });
+            coil2 = new THREE.Mesh(coilGeometry2, coilMaterial2);
+            coil2.position.set(3, 0, 0);
+            coil2.rotation.x = Math.PI / 2;
+            scene.add(coil2);
+            
+            // 同极性端标记（点）
+            const dotGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+            const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xea4335 });
+            dot1 = new THREE.Mesh(dotGeometry, dotMaterial);
+            dot1.position.set(-3, 2.3, 0);
+            scene.add(dot1);
+            
+            dot2 = new THREE.Mesh(dotGeometry, dotMaterial);
+            dot2.position.set(3, 2.3, 0);
+            scene.add(dot2);
+        }
+        
+        // 创建箭头
+        function createArrows() {
+            // 箭头辅助函数
+            function createArrow(color, direction) {
+                const arrow = new THREE.ArrowHelper(
+                    new THREE.Vector3(direction.x, direction.y, direction.z),
+                    new THREE.Vector3(0, 0, 0),
+                    1.5,
+                    color
+                );
+                return arrow;
+            }
+            
+            // 电流箭头（绿色）
+            currentArrow1 = createArrow(0x34a853, new THREE.Vector3(0, 1, 0));
+            currentArrow1.position.set(-3, 0, 0);
+            scene.add(currentArrow1);
+            
+            currentArrow2 = createArrow(0x34a853, new THREE.Vector3(0, 1, 0));
+            currentArrow2.position.set(3, 0, 0);
+            scene.add(currentArrow2);
+            
+            // 互感电动势箭头（橙色）
+            mutualEMF1 = createArrow(0xf57c00, new THREE.Vector3(0, 1, 0));
+            mutualEMF1.position.set(-3, -1.5, 0);
+            scene.add(mutualEMF1);
+            
+            mutualEMF2 = createArrow(0xf57c00, new THREE.Vector3(0, 1, 0));
+            mutualEMF2.position.set(3, -1.5, 0);
+            scene.add(mutualEMF2);
+            
+            // 自感电动势箭头（红色）
+            selfEMF1 = createArrow(0xea4335, new THREE.Vector3(0, 1, 0));
+            selfEMF1.position.set(-3, -3, 0);
+            scene.add(selfEMF1);
+            
+            selfEMF2 = createArrow(0xea4335, new THREE.Vector3(0, 1, 0));
+            selfEMF2.position.set(3, -3, 0);
+            scene.add(selfEMF2);
+            
+            // 总感应电动势箭头（紫色）
+            totalEMF1 = createArrow(0x9c27b0, new THREE.Vector3(0, 1, 0));
+            totalEMF1.position.set(-3, 1.5, 0);
+            scene.add(totalEMF1);
+            
+            totalEMF2 = createArrow(0x9c27b0, new THREE.Vector3(0, 1, 0));
+            totalEMF2.position.set(3, 1.5, 0);
+            scene.add(totalEMF2);
+        }
+        
+        // 更新箭头方向和大小
+        function updateArrows() {
+            // 计算互感电动势
+            let emf12, emf21;
+            
+            if (polarityMode === 'same') {
+                // 同极性端
+                emf12 = -M * di2;
+                emf21 = -M * di1;
+            } else {
+                // 异极性端
+                emf12 = M * di2;
+                emf21 = M * di1;
+            }
+            
+            // 计算自感电动势
+            const emf11 = -L1 * di1;
+            const emf22 = -L2 * di2;
+            
+            // 计算总感应电动势
+            const emf1Total = emf11 + emf12;
+            const emf2Total = emf22 + emf21;
+            
+            // 更新UI显示
+            document.getElementById('emf12-value').textContent = emf12.toFixed(2) + " V";
+            document.getElementById('emf21-value').textContent = emf21.toFixed(2) + " V";
+            document.getElementById('emf11-value').textContent = emf11.toFixed(2) + " V";
+            document.getElementById('emf22-value').textContent = emf22.toFixed(2) + " V";
+            document.getElementById('emf1-total').textContent = emf1Total.toFixed(2) + " V";
+            document.getElementById('emf2-total').textContent = emf2Total.toFixed(2) + " V";
+            document.getElementById('voltage1-value').textContent = (-emf1Total).toFixed(2) + " V";
+            document.getElementById('voltage2-value').textContent = (-emf2Total).toFixed(2) + " V";
+            
+            // 更新公式显示
+            if (polarityMode === 'same') {
+                document.getElementById('mutual-emf-formula').innerHTML = 
+                    "e₁₂ = -M · di₂/dt &emsp; &emsp; e₂₁ = -M · di₁/dt";
+            } else {
+                document.getElementById('mutual-emf-formula').innerHTML = 
+                    "e₁₂ = M · di₂/dt &emsp; &emsp; e₂₁ = M · di₁/dt";
+            }
+            
+            // 更新箭头方向和大小
+            updateArrow(currentArrow1, currentDir1 === 'positive' ? 1 : -1, 0.8);
+            updateArrow(currentArrow2, currentDir2 === 'positive' ? 1 : -1, 0.8);
+            
+            updateArrow(mutualEMF1, emf12 > 0 ? 1 : -1, Math.min(Math.abs(emf12) * 0.8, 2));
+            updateArrow(mutualEMF2, emf21 > 0 ? 1 : -1, Math.min(Math.abs(emf21) * 0.8, 2));
+            
+            updateArrow(selfEMF1, emf11 > 0 ? 1 : -1, Math.min(Math.abs(emf11) * 0.8, 2));
+            updateArrow(selfEMF2, emf22 > 0 ? 1 : -1, Math.min(Math.abs(emf22) * 0.8, 2));
+            
+            updateArrow(totalEMF1, emf1Total > 0 ? 1 : -1, Math.min(Math.abs(emf1Total) * 0.8, 2));
+            updateArrow(totalEMF2, emf2Total > 0 ? 1 : -1, Math.min(Math.abs(emf2Total) * 0.8, 2));
+        }
+        
+        // 更新单个箭头
+        function updateArrow(arrow, direction, length) {
+            arrow.setLength(length, 0.2 * length, 0.1 * length);
+            arrow.setDirection(new THREE.Vector3(0, direction, 0));
+        }
+        
+        // 窗口大小变化处理
+        function onWindowResize() {
+            const container = document.getElementById('three-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+            
+            // 自动模式
+            if (autoMode) {
+                di1 = 1.5 * Math.sin(Date.now() * 0.001);
+                di2 = 1.2 * Math.cos(Date.now() * 0.001);
+                
+                document.getElementById('di1').value = di1;
+                document.getElementById('di2').value = di2;
+                document.getElementById('di1-value').textContent = di1.toFixed(2);
+                document.getElementById('di2-value').textContent = di2.toFixed(2);
+                
+                updateArrows();
+            }
+        }
+        
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 互感系数
+            document.getElementById('mutual-inductance').addEventListener('input', function() {
+                M = parseFloat(this.value);
+                document.getElementById('m-value').textContent = M.toFixed(1);
+                updateArrows();
+            });
+            
+            // 自感系数1
+            document.getElementById('self-inductance1').addEventListener('input', function() {
+                L1 = parseFloat(this.value);
+                document.getElementById('l1-value').textContent = L1.toFixed(1);
+                updateArrows();
+            });
+            
+            // 自感系数2
+            document.getElementById('self-inductance2').addEventListener('input', function() {
+                L2 = parseFloat(this.value);
+                document.getElementById('l2-value').textContent = L2.toFixed(1);
+                updateArrows();
+            });
+            
+            // di1/dt
+            document.getElementById('di1').addEventListener('input', function() {
+                di1 = parseFloat(this.value);
+                document.getElementById('di1-value').textContent = di1.toFixed(2);
+                updateArrows();
+            });
+            
+            // di2/dt
+            document.getElementById('di2').addEventListener('input', function() {
+                di2 = parseFloat(this.value);
+                document.getElementById('di2-value').textContent = di2.toFixed(2);
+                updateArrows();
+            });
+            
+            // 极性端切换
+            document.getElementById('polarity-toggle').addEventListener('change', function() {
+                polarityMode = this.checked ? 'different' : 'same';
+                document.getElementById('polarity-status').innerHTML = 
+                    `当前: <span class="status-indicator ${polarityMode === 'same' ? 'positive' : 'negative'}"></span>${
+                        polarityMode === 'same' ? '同极性端' : '异极性端'}`;
+                
+                // 移动线圈2的极性点
+                dot2.position.y = polarityMode === 'same' ? 2.3 : -2.3;
+                
+                updateArrows();
+            });
+            
+            // 电流方向1切换
+            document.getElementById('current1-toggle').addEventListener('change', function() {
+                currentDir1 = this.checked ? 'positive' : 'negative';
+                document.getElementById('current1-status').innerHTML = 
+                    `当前: <span class="status-indicator ${currentDir1 === 'positive' ? 'positive' : 'negative'}"></span>${
+                        currentDir1 === 'positive' ? '指向同极性端' : '指向异极性端'}`;
+                updateArrows();
+            });
+            
+            // 电流方向2切换
+            document.getElementById('current2-toggle').addEventListener('change', function() {
+                currentDir2 = this.checked ? 'positive' : 'negative';
+                document.getElementById('current2-status').innerHTML = 
+                    `当前: <span class="status-indicator ${currentDir2 === 'positive' ? 'positive' : 'negative'}"></span>${
+                        currentDir2 === 'positive' ? '指向同极性端' : '指向异极性端'}`;
+                updateArrows();
+            });
+            
+            // 重置按钮
+            document.getElementById('reset-btn').addEventListener('click', function() {
+                resetExperiment();
+            });
+            
+            // 自动演示按钮
+            document.getElementById('auto-btn').addEventListener('click', function() {
+                autoMode = !autoMode;
+                this.textContent = autoMode ? '停止自动演示' : '自动演示模式';
+            });
+        }
+        
+        // 重置实验
+        function resetExperiment() {
+            document.getElementById('mutual-inductance').value = 0.8;
+            document.getElementById('self-inductance1').value = 1.5;
+            document.getElementById('self-inductance2').value = 1.2;
+            document.getElementById('di1').value = 0.5;
+            document.getElementById('di2').value = 0.3;
+            
+            M = 0.8;
+            L1 = 1.5;
+            L2 = 1.2;
+            di1 = 0.5;
+            di2 = 0.3;
+            
+            document.getElementById('m-value').textContent = M.toFixed(1);
+            document.getElementById('l1-value').textContent = L1.toFixed(1);
+            document.getElementById('l2-value').textContent = L2.toFixed(1);
+            document.getElementById('di1-value').textContent = di1.toFixed(2);
+            document.getElementById('di2-value').textContent = di2.toFixed(2);
+            
+            // 重置开关状态
+            document.getElementById('polarity-toggle').checked = false;
+            document.getElementById('current1-toggle').checked = true;
+            document.getElementById('current2-toggle').checked = true;
+            
+            polarityMode = 'same';
+            currentDir1 = 'positive';
+            currentDir2 = 'positive';
+            
+            document.getElementById('polarity-status').innerHTML = 
+                '当前: <span class="status-indicator positive"></span>同极性端';
+            document.getElementById('current1-status').innerHTML = 
+                '当前: <span class="status-indicator positive"></span>指向同极性端';
+            document.getElementById('current2-status').innerHTML = 
+                '当前: <span class="status-indicator positive"></span>指向同极性端';
+            
+            // 重置线圈2的极性点位置
+            dot2.position.y = 2.3;
+            
+            // 停止自动模式
+            autoMode = false;
+            document.getElementById('auto-btn').textContent = '自动演示模式';
+            
+            updateArrows();
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', function() {
+            initThreeJS();
+            setupEventListeners();
+            updateArrows();
+        });
+    </script>
+</body>
+</html>

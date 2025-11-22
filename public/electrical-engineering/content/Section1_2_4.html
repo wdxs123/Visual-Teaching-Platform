@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式电压源特性方程学习平台</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.7/build/dat.gui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(to right, #00c9ff, #92fe9d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .visualization {
+            flex: 1;
+            min-width: 600px;
+            height: 600px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #circuit-container {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .demo-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 300px;
+            font-size: 0.9rem;
+            border: 1px solid #2196f3;
+        }
+        
+        .demo-info h3 {
+            color: #64b5f6;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .controls {
+            flex: 1;
+            min-width: 350px;
+            background: rgba(30, 40, 80, 0.6);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .controls h2 {
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            color: #64b5f6;
+            border-bottom: 2px solid #64b5f6;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .convention-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .convention-btn {
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(100, 181, 246, 0.2);
+            color: #fff;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .convention-btn:hover {
+            background: rgba(100, 181, 246, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .convention-btn.active {
+            background: linear-gradient(90deg, #2196f3, #21cbf3);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+        
+        .convention-btn .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+        }
+        
+        .convention-btn .equation {
+            display: block;
+            margin-top: 8px;
+            font-size: 1.2rem;
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .convention-btn .description {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .sliders {
+            margin-top: 25px;
+        }
+        
+        .slider-group {
+            margin-bottom: 25px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .slider-value {
+            font-weight: bold;
+            color: #64b5f6;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2196f3;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.8);
+        }
+        
+        .theory {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .theory h2 {
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            color: #64b5f6;
+            border-bottom: 2px solid #64b5f6;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .concept {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(30, 40, 80, 0.4);
+            border-radius: 10px;
+        }
+        
+        .concept h3 {
+            color: #4fc3f7;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .concept p {
+            line-height: 1.7;
+            margin-bottom: 10px;
+        }
+        
+        .equation-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            text-align: center;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            gap: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .current-positive { background: #00e676; }
+        .current-negative { background: #ff5252; }
+        .voltage { background: #64b5f6; }
+        .resistance { background: #ffca28; }
+        .emf { background: #e040fb; }
+        
+        .live-equation {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.4rem;
+            border: 2px solid #2196f3;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .value {
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+        
+        .tutorial {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 300px;
+            font-size: 0.9rem;
+            border: 1px solid #00e676;
+        }
+        
+        .tutorial h3 {
+            color: #00e676;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tutorial-list {
+            padding-left: 20px;
+        }
+        
+        .tutorial-list li {
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+        
+        .tutorial-list li::marker {
+            color: #00e676;
+        }
+        
+        /* 注释样式 */
+        .circuit-comment {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 100;
+            max-width: 260px;
+            border: 1px solid #64b5f6;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: none;
+        }
+        
+        .circuit-comment h4 {
+            color: #4fc3f7;
+            margin-bottom: 8px;
+            font-size: 16px;
+            border-bottom: 1px solid rgba(100, 181, 246, 0.4);
+            padding-bottom: 6px;
+        }
+        
+        .circuit-comment p {
+            line-height: 1.5;
+            margin-bottom: 6px;
+        }
+        
+        .circuit-comment .eq {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #92fe9d;
+            margin: 8px 0;
+            text-align: center;
+        }
+        
+        @media (max-width: 1100px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .visualization, .controls {
+                min-width: 100%;
+            }
+            
+            .tutorial, .demo-info {
+                position: relative;
+                top: 0;
+                left: 0;
+                max-width: 100%;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>交互式电压源特性方程学习平台</h1>
+            <p class="subtitle">通过3D交互式模型深入理解理想电压源、实际电压源及不同电路惯例下的特性方程，动态观察参数变化对电路的影响</p>
+        </header>
+        
+        <div class="content">
+            <div class="visualization">
+                <div id="circuit-container"></div>
+                <div class="tutorial">
+                    <h3><i class="fas fa-lightbulb"></i> 操作指南</h3>
+                    <ul class="tutorial-list">
+                        <li>使用鼠标拖拽可旋转3D电路模型</li>
+                        <li>选择不同电路惯例查看特性方程变化</li>
+                        <li>调整参数观察电路行为变化</li>
+                        <li><strong>悬停在电路元件上查看详细信息</strong></li>
+                        <li>注意电流方向、电压极性的视觉反馈</li>
+                    </ul>
+                </div>
+                
+                <div class="demo-info">
+                    <h3><i class="fas fa-info-circle"></i> 演示说明</h3>
+                    <p>当前模型展示了实际电压源电路，包含理想电压源和内阻。特性方程根据选择的电路惯例变化。</p>
+                </div>
+                
+                <div class="live-equation">
+                    <i class="fas fa-bolt"></i>
+                    <span>u = <span id="e-value" class="value">10</span> 
+                    <span id="sign">-</span> 
+                    (<span id="r-value" class="value">1</span> × 
+                    <span id="i-value" class="value">2</span>) 
+                    = <span id="u-value" class="value">8</span> V</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <h2><i class="fas fa-cogs"></i> 电路控制面板</h2>
+                <div class="convention-selector">
+                    <button class="convention-btn active" data-type="generator">
+                        <div class="header">
+                            <i class="fas fa-power-off"></i>
+                            <strong>发电机惯例</strong>
+                        </div>
+                        <span class="equation">u = e - R·i</span>
+                        <span class="description">电流方向与电动势同向，与电压反向</span>
+                    </button>
+                    <button class="convention-btn" data-type="motor">
+                        <div class="header">
+                            <i class="fas fa-car"></i>
+                            <strong>电动机惯例</strong>
+                        </div>
+                        <span class="equation">u = e + R·i</span>
+                        <span class="description">电流方向与电动势反向，与电压同向</span>
+                    </button>
+                    <button class="convention-btn" data-type="transformer">
+                        <div class="header">
+                            <i class="fas fa-bolt"></i>
+                            <strong>变压器惯例</strong>
+                        </div>
+                        <span class="equation">u = -e + R·i</span>
+                        <span class="description">电流方向与电压、电动势同向</span>
+                    </button>
+                </div>
+                
+                <div class="sliders">
+                    <h2><i class="fas fa-sliders-h"></i> 电路参数调节</h2>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span><i class="fas fa-bolt"></i> 电动势 (e):</span>
+                            <span id="e-display" class="slider-value">10 V</span>
+                        </div>
+                        <input type="range" id="e-slider" min="1" max="20" value="10" step="0.5">
+                    </div>
+                    
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span><i class="fas fa-resistance"></i> 内阻 (R):</span>
+                            <span id="r-display" class="slider-value">1 Ω</span>
+                        </div>
+                        <input type="range" id="r-slider" min="0.1" max="5" value="1" step="0.1">
+                    </div>
+                    
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span><i class="fas fa-bolt"></i> 电流 (i):</span>
+                            <span id="i-display" class="slider-value">2 A</span>
+                        </div>
+                        <input type="range" id="i-slider" min="-5" max="5" value="2" step="0.1">
+                    </div>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color current-positive"></div>
+                        <span>电流正方向</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color current-negative"></div>
+                        <span>电流负方向</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color voltage"></div>
+                        <span>电压</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color resistance"></div>
+                        <span>内阻</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color emf"></div>
+                        <span>电动势</span>
+                    </div>
+                    <div class="legend-item">
+                        <i class="fas fa-info-circle" style="color: #00e676;"></i>
+                        <span>悬停元件查看信息</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="theory">
+            <h2><i class="fas fa-book"></i> 核心知识点</h2>
+            
+            <div class="concept">
+                <h3><i class="fas fa-car-battery"></i> 理想电压源</h3>
+                <p>理想电压源是从实际电源中抽象出来的模型，它的端电压不受输出电流的影响。</p>
+                <div class="equation-box">e(E) = u(U)</div>
+                <p>理想电压源的图形符号中，电动势用小写字母e表示，端电压用小写字母u表示。若电动势是恒定不变的，则用大写字母E(U)表示。</p>
+            </div>
+            
+            <div class="concept">
+                <h3><i class="fas fa-battery-three-quarters"></i> 实际电压源</h3>
+                <p>实际存在的电压源，其端电压受输出电流的影响，可用理想电压源和内阻串联组成模型。</p>
+                <div class="equation-box">u = e ± R·i</div>
+                <p>特性方程的形式取决于电压、电流和电动势的参考方向（参考极性）的配合。</p>
+            </div>
+            
+            <div class="concept">
+                <h3><i class="fas fa-project-diagram"></i> 三种电路惯例</h3>
+                <p><strong>发电机惯例：</strong>电流的参考方向和电动势参考极性相同，而电流的参考方向和电压的参考极性相反。</p>
+                <div class="equation-box">u = e - R·i</div>
+                
+                <p><strong>电动机惯例：</strong>电流的参考方向和电动势的参考极性相反，电流的参考方向和电压的参考极性相同。</p>
+                <div class="equation-box">u = e + R·i</div>
+                
+                <p><strong>变压器惯例：</strong>电流的参考方向和电压、电动势的参考极性相同。</p>
+                <div class="equation-box">u = -e + R·i</div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>交互式电路教学平台 | 电压源特性方程可视化 | 通过交互理解发电机、电动机和变压器惯例</p>
+        </div>
+        
+        <!-- 注释元素 -->
+        <div class="circuit-comment" id="comment-voltage">
+            <h4>电压源</h4>
+            <p>• 电动势 (e): <span id="comment-e">10</span> V</p>
+            <p>• 内阻 (R): <span id="comment-r">1</span> Ω</p>
+            <p>• 端电压 (u): <span id="comment-u">8</span> V</p>
+            <p class="eq" id="comment-equation">u = e - R·i</p>
+            <p>实际电压源可表示为理想电压源和内阻的串联组合。端电压随电流增加而降低。</p>
+        </div>
+        
+        <div class="circuit-comment" id="comment-resistor">
+            <h4>内阻 (R)</h4>
+            <p>• 内阻值: <span id="comment-res-value">1</span> Ω</p>
+            <p>• 电流 (i): <span id="comment-i">2</span> A</p>
+            <p>• 电压降: <span id="comment-v-drop">2</span> V</p>
+            <p>实际电源的内部电阻消耗能量并产生电压降，导致输出端电压低于理想电压源。</p>
+        </div>
+    </div>
+
+    <script>
+        // Three.js 场景初始化
+        let scene, camera, renderer, circuit;
+        let voltageSource, resistor, currentArrows, voltageLabels;
+        let e = 10, r = 1, i = 2, u = 8;
+        let convention = 'generator';
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let raycaster, mouse, interactableObjects = [];
+        
+        function initThreeJS() {
+            // 创建场景
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0c0f1f);
+            
+            // 创建相机
+            const container = document.querySelector('.visualization');
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0, 15);
+            camera.lookAt(0, 0, 0);
+            
+            // 创建渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            document.getElementById('circuit-container').appendChild(renderer.domElement);
+            
+            // 添加光源
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7);
+            scene.add(directionalLight);
+            
+            // 创建坐标轴
+            const axesHelper = new THREE.AxesHelper(5);
+            scene.add(axesHelper);
+            
+            // 初始化Raycaster和鼠标跟踪
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            interactableObjects = [];
+            
+            // 创建电路
+            createCircuit();
+            
+            // 添加事件监听
+            setupEventListeners();
+            
+            // 开始动画循环
+            animate();
+            
+            // 响应窗口大小变化
+            window.addEventListener('resize', onWindowResize);
+        }
+        
+        function createCircuit() {
+            // 清除现有电路
+            if (circuit) {
+                while(circuit.children.length > 0) { 
+                    scene.remove(circuit.children[0]); 
+                }
+                scene.remove(circuit);
+            }
+            
+            circuit = new THREE.Group();
+            scene.add(circuit);
+            
+            // 创建导线
+            createWires();
+            
+            // 创建电压源
+            createVoltageSource();
+            
+            // 创建电阻
+            createResistor();
+            
+            // 创建电流箭头
+            createCurrentArrows();
+            
+            // 创建电压标签
+            createVoltageLabels();
+            
+            // 更新电路
+            updateCircuit();
+        }
+        
+        function createWires() {
+            const wireMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa });
+            const wireGeometry = new THREE.CylinderGeometry(0.05, 0.05, 8, 8);
+            
+            // 水平导线
+            const horizontalWire = new THREE.Mesh(wireGeometry, wireMaterial);
+            horizontalWire.rotation.z = Math.PI / 2;
+            horizontalWire.position.x = 0;
+            circuit.add(horizontalWire);
+            
+            // 垂直导线
+            const verticalWire = new THREE.Mesh(wireGeometry, wireMaterial);
+            verticalWire.position.y = -2;
+            circuit.add(verticalWire);
+            
+            // 连接导线
+            const connectorGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1, 8);
+            
+            // 左上连接
+            const connector1 = new THREE.Mesh(connectorGeometry, wireMaterial);
+            connector1.position.set(-4, -1.5, 0);
+            connector1.rotation.z = Math.PI / 4;
+            circuit.add(connector1);
+            
+            // 左下连接
+            const connector2 = new THREE.Mesh(connectorGeometry, wireMaterial);
+            connector2.position.set(-4, -2.5, 0);
+            connector2.rotation.z = -Math.PI / 4;
+            circuit.add(connector2);
+            
+            // 右上连接
+            const connector3 = new THREE.Mesh(connectorGeometry, wireMaterial);
+            connector3.position.set(4, -1.5, 0);
+            connector3.rotation.z = -Math.PI / 4;
+            circuit.add(connector3);
+            
+            // 右下连接
+            const connector4 = new THREE.Mesh(connectorGeometry, wireMaterial);
+            connector4.position.set(4, -2.5, 0);
+            connector4.rotation.z = Math.PI / 4;
+            circuit.add(connector4);
+        }
+        
+        function createVoltageSource() {
+            const sourceGroup = new THREE.Group();
+            
+            // 正极（长线）
+            const positiveGeometry = new THREE.BoxGeometry(0.2, 1.5, 0.1);
+            const positiveMaterial = new THREE.MeshPhongMaterial({ color: 0xff5252 });
+            const positive = new THREE.Mesh(positiveGeometry, positiveMaterial);
+            positive.position.y = 0.75;
+            
+            // 负极（短线）
+            const negativeGeometry = new THREE.BoxGeometry(0.2, 0.7, 0.1);
+            const negativeMaterial = new THREE.MeshPhongMaterial({ color: 0x2196f3 });
+            const negative = new THREE.Mesh(negativeGeometry, negativeMaterial);
+            negative.position.y = -0.35;
+            
+            // 容器
+            const containerGeometry = new THREE.BoxGeometry(1.2, 2.5, 0.5);
+            const containerMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x333333,
+                transparent: true,
+                opacity: 0.7
+            });
+            const container = new THREE.Mesh(containerGeometry, containerMaterial);
+            
+            // 电动势标签
+            const emfLabel = createTextLabel("e", 0.5, new THREE.Color(0xe040fb));
+            emfLabel.position.set(0, 0, 0.3);
+            
+            // 添加包围盒用于悬停检测（不可见）
+            const hitboxGeometry = new THREE.BoxGeometry(1.2, 2.5, 0.6);
+            const hitboxMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xffffff, 
+                transparent: true, 
+                opacity: 0.0,
+                visible: false
+            });
+            const hitbox = new THREE.Mesh(hitboxGeometry, hitboxMaterial);
+            hitbox.userData = {
+                type: 'voltageSource',
+                commentId: 'comment-voltage',
+                update: () => {
+                    document.getElementById('comment-e').textContent = e.toFixed(1);
+                    document.getElementById('comment-r').textContent = r.toFixed(1);
+                    document.getElementById('comment-u').textContent = u.toFixed(2);
+                    document.getElementById('comment-equation').textContent = getEquationText();
+                }
+            };
+            interactableObjects.push(hitbox);
+            
+            sourceGroup.add(positive);
+            sourceGroup.add(negative);
+            sourceGroup.add(container);
+            sourceGroup.add(emfLabel);
+            sourceGroup.add(hitbox);
+            sourceGroup.position.set(0, -2, 0);
+            
+            circuit.add(sourceGroup);
+            voltageSource = sourceGroup;
+        }
+        
+        function createResistor() {
+            const resistorGroup = new THREE.Group();
+            
+            // 电阻体
+            const bodyGeometry = new THREE.BoxGeometry(1, 0.5, 0.5);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0xffca28 });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            
+            // 导线
+            const wireMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa });
+            const leftWireGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1, 8);
+            const leftWire = new THREE.Mesh(leftWireGeometry, wireMaterial);
+            leftWire.position.x = -0.75;
+            leftWire.rotation.z = Math.PI / 2;
+            
+            const rightWireGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1, 8);
+            const rightWire = new THREE.Mesh(rightWireGeometry, wireMaterial);
+            rightWire.position.x = 0.75;
+            rightWire.rotation.z = Math.PI / 2;
+            
+            // 电阻标签
+            const rLabel = createTextLabel("R", 0.5, new THREE.Color(0xffca28));
+            rLabel.position.set(0, 0, 0.3);
+            
+            // 添加包围盒用于悬停检测（不可见）
+            const hitboxGeometry = new THREE.BoxGeometry(1.1, 0.6, 0.6);
+            const hitboxMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xffffff, 
+                transparent: true, 
+                opacity: 0.0,
+                visible: false
+            });
+            const hitbox = new THREE.Mesh(hitboxGeometry, hitboxMaterial);
+            hitbox.userData = {
+                type: 'resistor',
+                commentId: 'comment-resistor',
+                update: () => {
+                    document.getElementById('comment-res-value').textContent = r.toFixed(1);
+                    document.getElementById('comment-i').textContent = Math.abs(i).toFixed(1) + (i < 0 ? ' A (反向)' : ' A');
+                    document.getElementById('comment-v-drop').textContent = (Math.abs(i) * r).toFixed(2);
+                }
+            };
+            interactableObjects.push(hitbox);
+            
+            resistorGroup.add(body);
+            resistorGroup.add(leftWire);
+            resistorGroup.add(rightWire);
+            resistorGroup.add(rLabel);
+            resistorGroup.add(hitbox);
+            resistorGroup.position.set(0, 2, 0);
+            
+            circuit.add(resistorGroup);
+            resistor = resistorGroup;
+        }
+        
+        function getEquationText() {
+            if (convention === 'generator') {
+                return 'u = e - R·i';
+            } else if (convention === 'motor') {
+                return 'u = e + R·i';
+            } else if (convention === 'transformer') {
+                return 'u = -e + R·i';
+            }
+            return '';
+        }
+        
+        function createTextLabel(text, size, color) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 128;
+            canvas.height = 64;
+            
+            context.fillStyle = 'rgba(0, 0, 0, 0)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            context.font = 'Bold 48px Arial';
+            context.fillStyle = `rgb(${color.r * 255}, ${color.g * 255}, ${color.b * 255})`;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, canvas.width / 2, canvas.height / 2);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.MeshBasicMaterial({ 
+                map: texture,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            
+            const geometry = new THREE.PlaneGeometry(size, size / 2);
+            return new THREE.Mesh(geometry, material);
+        }
+        
+        function createCurrentArrows() {
+            currentArrows = new THREE.Group();
+            
+            // 创建箭头
+            const arrowMaterial = new THREE.MeshBasicMaterial({ color: 0x00e676 });
+            const arrowGeometry = new THREE.ConeGeometry(0.2, 0.6, 8);
+            
+            // 顶部箭头
+            const arrowTop = new THREE.Mesh(arrowGeometry, arrowMaterial);
+            arrowTop.rotation.x = Math.PI;
+            arrowTop.position.set(0, 3.5, 0);
+            
+            // 底部箭头
+            const arrowBottom = new THREE.Mesh(arrowGeometry, arrowMaterial);
+            arrowBottom.position.set(0, -3.5, 0);
+            
+            // 电流标签
+            const iLabelTop = createTextLabel("i", 0.4, new THREE.Color(0x00e676));
+            iLabelTop.position.set(0, 4.2, 0);
+            
+            const iLabelBottom = createTextLabel("i", 0.4, new THREE.Color(0x00e676));
+            iLabelBottom.position.set(0, -4.2, 0);
+            
+            currentArrows.add(arrowTop);
+            currentArrows.add(arrowBottom);
+            currentArrows.add(iLabelTop);
+            currentArrows.add(iLabelBottom);
+            circuit.add(currentArrows);
+        }
+        
+        function createVoltageLabels() {
+            voltageLabels = new THREE.Group();
+            
+            // 创建正负符号
+            const plusMaterial = new THREE.MeshBasicMaterial({ color: 0xff5252 });
+            const minusMaterial = new THREE.MeshBasicMaterial({ color: 0x2196f3 });
+            
+            // 正极符号
+            const plusGeometry = new THREE.BoxGeometry(0.4, 0.1, 0.1);
+            const plusHorizontal = new THREE.Mesh(plusGeometry, plusMaterial);
+            const plusVertical = new THREE.Mesh(plusGeometry, plusMaterial);
+            plusVertical.rotation.z = Math.PI / 2;
+            
+            const plusGroup = new THREE.Group();
+            plusGroup.add(plusHorizontal);
+            plusGroup.add(plusVertical);
+            plusGroup.position.set(-5, -2, 0);
+            
+            // 负极符号
+            const minusGeometry = new THREE.BoxGeometry(0.4, 0.1, 0.1);
+            const minus = new THREE.Mesh(minusGeometry, minusMaterial);
+            minus.position.set(5, -2, 0);
+            
+            // 电压标签
+            const uLabel = createTextLabel("u", 0.4, new THREE.Color(0x64b5f6));
+            uLabel.position.set(0, -3, 0);
+            
+            voltageLabels.add(plusGroup);
+            voltageLabels.add(minus);
+            voltageLabels.add(uLabel);
+            circuit.add(voltageLabels);
+        }
+        
+        function updateCircuit() {
+            // 计算端电压
+            if (convention === 'generator') {
+                u = e - r * i;
+                document.getElementById('sign').textContent = '-';
+            } else if (convention === 'motor') {
+                u = e + r * i;
+                document.getElementById('sign').textContent = '+';
+            } else if (convention === 'transformer') {
+                u = -e + r * i;
+                document.getElementById('sign').textContent = '+';
+            }
+            
+            // 更新实时方程
+            document.getElementById('e-value').textContent = e;
+            document.getElementById('r-value').textContent = r;
+            document.getElementById('i-value').textContent = i;
+            document.getElementById('u-value').textContent = u.toFixed(2);
+            
+            // 更新电流箭头方向和颜色
+            const arrowMaterial = currentArrows.children[0].material;
+            const iLabelMaterial = currentArrows.children[2].material;
+            
+            if (i >= 0) {
+                // 正电流
+                arrowMaterial.color.set(0x00e676);
+                iLabelMaterial.map.image && (iLabelMaterial.map.needsUpdate = true);
+                currentArrows.rotation.z = 0;
+            } else {
+                // 负电流
+                arrowMaterial.color.set(0xff5252);
+                iLabelMaterial.map.image && (iLabelMaterial.map.needsUpdate = true);
+                currentArrows.rotation.z = Math.PI;
+            }
+            
+            // 更新电压源颜色（基于电压）
+            const voltageSourceMaterial = voltageSource.children[0].material;
+            const intensity = Math.min(1, Math.abs(u) / 20);
+            
+            if (u >= 0) {
+                voltageSourceMaterial.color.setRGB(1, 0.32, 0.32); // 红色
+            } else {
+                voltageSourceMaterial.color.setRGB(0.39, 0.71, 0.96); // 蓝色
+            }
+            
+            // 更新电阻颜色（基于功率）
+            const power = i * i * r;
+            const resistorMaterial = resistor.children[0].material;
+            const heat = Math.min(1, power / 50);
+            resistorMaterial.color.setRGB(1, 0.79 - heat * 0.4, 0.16 - heat * 0.1);
+        }
+        
+        function setupEventListeners() {
+            // 惯例选择按钮
+            const conventionButtons = document.querySelectorAll('.convention-btn');
+            conventionButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    conventionButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    convention = button.dataset.type;
+                    updateCircuit();
+                });
+            });
+            
+            // 电动势滑块
+            const eSlider = document.getElementById('e-slider');
+            eSlider.addEventListener('input', () => {
+                e = parseFloat(eSlider.value);
+                document.getElementById('e-display').textContent = e + ' V';
+                updateCircuit();
+            });
+            
+            // 内阻滑块
+            const rSlider = document.getElementById('r-slider');
+            rSlider.addEventListener('input', () => {
+                r = parseFloat(rSlider.value);
+                document.getElementById('r-display').textContent = r + ' Ω';
+                updateCircuit();
+            });
+            
+            // 电流滑块
+            const iSlider = document.getElementById('i-slider');
+            iSlider.addEventListener('input', () => {
+                i = parseFloat(iSlider.value);
+                document.getElementById('i-display').textContent = i + ' A';
+                updateCircuit();
+            });
+            
+            // 添加鼠标交互控制
+            const canvas = renderer.domElement;
+            
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = {
+                    x: e.clientX,
+                    y: e.clientY
+                };
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                if (isDragging) {
+                    const deltaMove = {
+                        x: e.clientX - previousMousePosition.x,
+                        y: e.clientY - previousMousePosition.y
+                    };
+                    
+                    circuit.rotation.y += deltaMove.x * 0.01;
+                    circuit.rotation.x += deltaMove.y * 0.01;
+                    
+                    previousMousePosition = {
+                        x: e.clientX,
+                        y: e.clientY
+                    };
+                } else {
+                    // Hover检测
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects(interactableObjects);
+                    
+                    if (intersects.length > 0) {
+                        const hitObject = intersects[0].object;
+                        const commentId = hitObject.userData.commentId;
+                        hitObject.userData.update();
+                        
+                        const comment = document.getElementById(commentId);
+                        comment.style.display = 'block';
+                        comment.style.left = (e.clientX + 20) + 'px';
+                        comment.style.top = (e.clientY + 20) + 'px';
+                    } else {
+                        document.querySelectorAll('.circuit-comment').forEach(el => {
+                            el.style.display = 'none';
+                        });
+                    }
+                }
+            });
+            
+            canvas.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+            
+            canvas.addEventListener('mouseleave', () => {
+                isDragging = false;
+                document.querySelectorAll('.circuit-comment').forEach(el => {
+                    el.style.display = 'none';
+                });
+            });
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // 使电流箭头脉动
+            const scale = 1 + Math.sin(Date.now() * 0.005) * 0.1;
+            currentArrows.scale.set(scale, scale, scale);
+            
+            renderer.render(scene, camera);
+        }
+        
+        function onWindowResize() {
+            const container = document.querySelector('.visualization');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        
+        // 初始化Three.js场景
+        window.onload = initThreeJS;
+    </script>
+</body>
+</html>

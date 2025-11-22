@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电路参考方向教学平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/jsm/controls/OrbitControls.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            color: #2c3e50;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+            width: 100%;
+        }
+
+        #threeContainer {
+            flex: 1;
+            position: relative;
+            width: 70%;
+            z-index: 1;
+            min-height: 600px;
+        }
+
+        #uiPanel {
+            width: 30%;
+            min-width: 350px;
+            background: rgba(255, 255, 255, 0.95);
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 2;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.05);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            background: linear-gradient(to right, #3498db, #2c3e50);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .panel-section {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(52, 152, 219, 0.2);
+        }
+
+        .panel-section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .panel-section h2 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #3498db;
+            display: flex;
+            align-items: center;
+        }
+
+        .panel-section h2 i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .panel-section p {
+            margin-bottom: 12px;
+            line-height: 1.6;
+            font-size: 16px;
+            color: #34495e;
+        }
+
+        .highlight {
+            background: rgba(52, 152, 219, 0.1);
+            color: #2980b9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .concept-card {
+            background: rgba(236, 240, 241, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #3498db;
+        }
+
+        .controls-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .control-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(52, 152, 219, 0.4);
+        }
+
+        .status {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(236, 240, 241, 0.5);
+            border-radius: 8px;
+            margin-top: 10px;
+            align-items: center;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .status-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .status-value {
+            font-weight: 700;
+            color: #3498db;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #34495e;
+            background: rgba(255,255,255,0.8);
+            padding: 6px 10px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .circuit-animation-control {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+        }
+
+        #infoOverlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #2c3e50;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 10;
+            max-width: 350px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #3498db;
+        }
+
+        #hoverInfo {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            color: #2c3e50;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            max-width: 300px;
+            pointer-events: none;
+            z-index: 15;
+            transform: translate(10px, 10px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #3498db;
+        }
+
+        #hoverInfo h3 {
+            color: #3498db;
+            margin-bottom: 6px;
+            font-size: 16px;
+        }
+
+        #hoverInfo p {
+            line-height: 1.4;
+            color: #34495e;
+        }
+
+        .convention-tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .convention-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(236, 240, 241, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .convention-tab.active {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+
+        .convention-tab:first-child {
+            border-top-left-radius: 8px;
+        }
+
+        .convention-tab:last-child {
+            border-top-right-radius: 8px;
+        }
+
+        @media (max-width: 1200px) {
+            #container {
+                flex-direction: column;
+            }
+
+            #threeContainer {
+                width: 100%;
+                height: 60vh;
+            }
+
+            #uiPanel {
+                width: 100%;
+                height: 40vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="threeContainer"></div>
+
+        <div id="uiPanel">
+            <div class="header">
+                <h1>电路参考方向教学平台</h1>
+                <p>无源惯例与有源惯例对比演示</p>
+            </div>
+
+            <div class="convention-tabs">
+                <div class="convention-tab active" id="passiveTab" onclick="switchConvention('passive')">
+                    无源惯例
+                </div>
+                <div class="convention-tab" id="activeTab" onclick="switchConvention('active')">
+                    有源惯例
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h2><i>📚</i> 核心概念</h2>
+                <div class="concept-card">
+                    <p><span class="highlight">无源惯例</span>：电流从正极流入元件，从负极流出</p>
+                </div>
+
+                <div class="concept-card">
+                    <p><span class="highlight">有源惯例</span>：电流从负极流入元件，从正极流出</p>
+                </div>
+
+                <div class="concept-card">
+                    <p>参考方向配合关系分<span class="highlight">相同方向</span>与<span class="highlight">相反方向</span>两种类型</p>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h2><i>🎚️</i> 交互控制</h2>
+                <div class="controls-group">
+                    <button onclick="toggleVoltagePolarity()" class="control-btn">
+                        <i>↕️</i> 切换参考极性
+                    </button>
+
+                    <button onclick="toggleCurrentAnimation()" class="control-btn">
+                        <i>✨</i> <span id="currentBtnText">显示</span>电流动画
+                    </button>
+                </div>
+
+                <div class="status">
+                    <span class="status-label">当前惯例：</span>
+                    <span class="status-value" id="conventionStatusText">无源惯例</span>
+                </div>
+
+                <div class="status">
+                    <span class="status-label">当前状态：</span>
+                    <span class="status-value" id="polarityStatusText">状态1 (左+右-)</span>
+                </div>
+
+                <div class="status">
+                    <span class="status-label">电流状态：</span>
+                    <span class="status-value" id="currentStatusText" style="color: #e74c3c;">隐藏</span>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h2><i>💡</i> 交互指南</h2>
+                <p>1. 点击<span class="highlight">切换参考极性</span>按钮改变电阻极性</p>
+                <p>2. 点击<span class="highlight">显示电流动画</span>按钮查看电流流动</p>
+                <p>3. 使用鼠标<span class="highlight">拖拽旋转</span>三维电路</p>
+                <p>4. 使用鼠标滚轮<span class="highlight">缩放</span>查看细节</p>
+
+                <div class="circuit-animation-control">
+                    <span>电路动画速度：</span>
+                    <input type="range" id="animationSpeed" min="0.5" max="3" step="0.5" value="1" onchange="updateAnimationSpeed()">
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #f39c12;"></div>
+                        <span>电阻</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e74c3c;"></div>
+                        <span>正极标记</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #2ecc71;"></div>
+                        <span>负极标记</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #3498db;"></div>
+                        <span>电流粒子</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="infoOverlay" style="display: none;">
+            <h3 id="componentTitle">组件信息</h3>
+            <p id="componentInfo">点击电路组件查看详细信息</p>
+        </div>
+
+        <div id="hoverInfo" style="display: none; left: 0px; top: 0px;">
+            <h3 id="hoverComponentTitle">元器件信息</h3>
+            <p id="hoverComponentInfo">元器件说明信息</p>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let scene, camera, renderer, controls, circuitComponents, currentParticles;
+        let currentDirection = 1; // 1: 从左到右, -1: 从右到左
+        let animationSpeed = 1;
+        let currentVisible = false;
+        let currentPolarityState = 1; // 1: 左+右-, 2: 左-右+, 3: 左+右-, 4: 左-右+
+        let currentConvention = 'passive'; // 'passive' 或 'active'
+
+        // UI 状态
+        let showInfoOverlay = false;
+        let componentTitle = '组件信息';
+        let componentInfo = '点击电路组件查看详细信息';
+        let showHoverInfo = false;
+        let hoverComponentTitle = '元器件信息';
+        let hoverComponentInfo = '元器件说明信息';
+        let hoverInfoStyle = {
+            display: 'none',
+            left: '0px',
+            top: '0px'
+        };
+
+        // 交互相关
+        let hoverTimeout = null;
+        let highlightedObject = null;
+        let raycaster = null;
+        let mouse = null;
+
+        // 初始化Three.js场景
+        function initThreeJS() {
+            // 初始化Three.js场景
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf8f9fa);
+
+            const container = document.getElementById('threeContainer');
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: true,
+                preserveDrawingBuffer: true
+            });
+
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // 添加光源
+            const ambientLight = new THREE.AmbientLight(0x404060, 1.0);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            directionalLight.position.set(10, 20, 15);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            const spotLight = new THREE.SpotLight(0x3498db, 1.8);
+            spotLight.position.set(-5, 15, 0);
+            spotLight.angle = Math.PI / 4;
+            spotLight.penumbra = 0.1;
+            spotLight.castShadow = true;
+            scene.add(spotLight);
+
+            // 初始化交互控制器
+            controls = new OrbitControls(camera, renderer.domElement);
+            camera.position.set(0, 8, 20);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.minDistance = 10;
+            controls.maxDistance = 40;
+            controls.update();
+
+            // 电路组件容器
+            circuitComponents = new THREE.Group();
+            scene.add(circuitComponents);
+            circuitComponents.position.y = 1;
+
+            // 创建基础电路
+            createCircuit();
+
+            // 设置射线检测
+            setupRaycaster();
+
+            // 开始动画循环
+            animate();
+        }
+
+        function createCircuit() {
+            // 创建电阻（黄色圆柱体）
+            const resistorGeometry = new THREE.CylinderGeometry(1.2, 1.2, 1, 32);
+            const resistorMaterial = new THREE.MeshStandardMaterial({
+                color: 0xf39c12,
+                roughness: 0.3,
+                metalness: 0.1
+            });
+            const resistor = new THREE.Mesh(resistorGeometry, resistorMaterial);
+            resistor.position.set(0, 0, 0);
+            resistor.userData = {
+                type: 'resistor',
+                info: '电阻值：4.7Ω\n功率：1/4W'
+            };
+            resistor.castShadow = true;
+            circuitComponents.add(resistor);
+
+            // 创建导线（贯穿电阻）
+            const wireGeometry = new THREE.CylinderGeometry(0.2, 0.2, 10, 8);
+            const wireMaterial = new THREE.MeshStandardMaterial({
+                color: 0x95a5a6,
+                roughness: 0.1,
+                metalness: 0.8
+            });
+            const wire = new THREE.Mesh(wireGeometry, wireMaterial);
+            wire.rotation.z = Math.PI / 2;
+            wire.castShadow = true;
+            wire.userData = {
+                type: 'wire',
+                info: '导线：贯穿电阻，传导电流'
+            };
+            circuitComponents.add(wire);
+
+            // 创建极性标记
+            createPolarityMarkers();
+        }
+
+        function createPolarityMarkers() {
+            const polarityGroup = new THREE.Group();
+
+            // 左侧标记（+） - 增大尺寸
+            const leftPlus = createTextLabel('+', 0xe74c3c);
+            leftPlus.position.set(-4, 0, 1.5);
+            polarityGroup.add(leftPlus);
+
+            // 右侧标记（-） - 增大尺寸
+            const rightMinus = createTextLabel('-', 0x2ecc71);
+            rightMinus.position.set(4, 0, 1.5);
+            polarityGroup.add(rightMinus);
+
+            circuitComponents.add(polarityGroup);
+            polarityGroup.name = 'polarityMarkers';
+        }
+
+        function createTextLabel(text, color) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256; // 增大尺寸
+            canvas.height = 256; // 增大尺寸
+
+            context.fillStyle = 'rgba(0,0,0,0)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            context.font = 'bold 96px Arial'; // 增大字体
+            context.fillStyle = color;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, canvas.width/2, canvas.height/2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({
+                map: texture,
+                transparent: true,
+                depthTest: false
+            });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(1.8, 1.8, 1); // 增大尺寸
+
+            sprite.userData = { type: 'textLabel' };
+            return sprite;
+        }
+
+        function generateCurrentParticles() {
+            if (currentParticles) {
+                scene.remove(currentParticles);
+            }
+
+            // 大幅增加粒子数量
+            const particleCount = 2000;
+            const particles = new THREE.BufferGeometry();
+            const posArray = new Float32Array(particleCount * 3);
+            const colorArray = new Float32Array(particleCount * 3);
+
+            // 使用更亮的蓝色粒子
+            const particleColor = new THREE.Color(0x0066ff);
+
+            // 创建多层粒子流（5层）
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                // 随机选择粒子层（-2, -1, 0, 1, 2）
+                const layer = Math.floor(Math.random() * 5) - 2;
+                const layerHeight = layer * 0.5;
+
+                // 在导线上生成粒子
+                posArray[i] = -8 + Math.random() * 16;
+                posArray[i+1] = layerHeight;
+                posArray[i+2] = 0;
+
+                // 设置粒子颜色
+                colorArray[i] = particleColor.r;
+                colorArray[i+1] = particleColor.g;
+                colorArray[i+2] = particleColor.b;
+            }
+
+            particles.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            particles.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+            const particleMaterial = new THREE.PointsMaterial({
+                size: 0.5, // 增大粒子尺寸
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.95,
+                sizeAttenuation: false
+            });
+
+            currentParticles = new THREE.Points(particles, particleMaterial);
+            currentParticles.name = 'currentFlow';
+            scene.add(currentParticles);
+
+            // 更新电流状态
+            currentVisible = true;
+            document.getElementById('currentBtnText').textContent = '隐藏';
+            document.getElementById('currentStatusText').textContent = '显示';
+            document.getElementById('currentStatusText').style.color = '#2ecc71';
+        }
+
+        function hideCurrentParticles() {
+            if (currentParticles) {
+                scene.remove(currentParticles);
+            }
+            currentVisible = false;
+            document.getElementById('currentBtnText').textContent = '显示';
+            document.getElementById('currentStatusText').textContent = '隐藏';
+            document.getElementById('currentStatusText').style.color = '#e74c3c';
+        }
+
+        function toggleCurrentAnimation() {
+            if (currentVisible) {
+                hideCurrentParticles();
+            } else {
+                generateCurrentParticles();
+            }
+        }
+
+        function animateCurrentParticles() {
+            if (!currentParticles) return;
+
+            const positions = currentParticles.geometry.attributes.position.array;
+            const baseSpeed = 0.25 * animationSpeed * currentDirection;
+
+            for (let i = 0; i < positions.length; i += 3) {
+                positions[i] += baseSpeed;
+
+                // 重置粒子位置
+                if (currentDirection > 0 && positions[i] > 8) {
+                    positions[i] = -8;
+                }
+                else if (currentDirection < 0 && positions[i] < -8) {
+                    positions[i] = 8;
+                }
+            }
+
+            currentParticles.geometry.attributes.position.needsUpdate = true;
+        }
+
+        function toggleVoltagePolarity() {
+            // 根据当前惯例切换状态
+            if (currentConvention === 'passive') {
+                // 无源惯例：状态1和2之间切换
+                currentPolarityState = currentPolarityState === 1 ? 2 : 1;
+            } else {
+                // 有源惯例：状态3和4之间切换
+                currentPolarityState = currentPolarityState === 3 ? 4 : 3;
+            }
+
+            // 更新极性标记
+            const polarityMarkers = circuitComponents.getObjectByName('polarityMarkers').children;
+
+            polarityMarkers.forEach(marker => {
+                if (marker.material.map) {
+                    // 翻转极性
+                    const canvas = marker.material.map.image;
+                    const context = canvas.getContext('2d');
+
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+                    context.font = 'bold 96px Arial'; // 增大字体
+                    context.textAlign = 'center';
+                    context.textBaseline = 'middle';
+
+                    // 状态1和3：左+右-
+                    // 状态2和4：左-右+
+                    if (currentPolarityState === 1 || currentPolarityState === 3) {
+                        if (marker.position.x < 0) {
+                            context.fillStyle = '#e74c3c';
+                            context.fillText('+', canvas.width/2, canvas.height/2);
+                            marker.material.color = new THREE.Color(0xe74c3c);
+                        } else {
+                            context.fillStyle = '#2ecc71';
+                            context.fillText('-', canvas.width/2, canvas.height/2);
+                            marker.material.color = new THREE.Color(0x2ecc71);
+                        }
+                    } else {
+                        if (marker.position.x < 0) {
+                            context.fillStyle = '#2ecc71';
+                            context.fillText('-', canvas.width/2, canvas.height/2);
+                            marker.material.color = new THREE.Color(0x2ecc71);
+                        } else {
+                            context.fillStyle = '#e74c3c';
+                            context.fillText('+', canvas.width/2, canvas.height/2);
+                            marker.material.color = new THREE.Color(0xe74c3c);
+                        }
+                    }
+
+                    marker.material.map.needsUpdate = true;
+                }
+            });
+
+            // 更新电流方向
+            if (currentConvention === 'passive') {
+                // 无源惯例：
+                // 状态1：电流从左向右
+                // 状态2：电流从右向左
+                currentDirection = currentPolarityState === 1 ? 1 : -1;
+            } else {
+                // 有源惯例：
+                // 状态3：电流从右向左
+                // 状态4：电流从左向右
+                currentDirection = currentPolarityState === 3 ? -1 : 1;
+            }
+
+            // 更新状态文本
+            updateStatusText();
+
+            // 重置电流动画
+            hideCurrentParticles();
+        }
+
+        function switchConvention(convention) {
+            currentConvention = convention;
+
+            // 更新标签样式
+            document.getElementById('passiveTab').classList.toggle('active', convention === 'passive');
+            document.getElementById('activeTab').classList.toggle('active', convention === 'active');
+
+            // 重置状态
+            if (currentConvention === 'passive') {
+                currentPolarityState = 1;
+            } else {
+                currentPolarityState = 3;
+            }
+
+            // 更新极性标记
+            toggleVoltagePolarity();
+
+            // 更新状态文本
+            updateStatusText();
+
+            // 重置电流动画
+            hideCurrentParticles();
+        }
+
+        function updateStatusText() {
+            document.getElementById('conventionStatusText').textContent = 
+                currentConvention === 'passive' ? '无源惯例' : '有源惯例';
+            
+            let statusText = '';
+            switch (currentPolarityState) {
+                case 1: statusText = '状态1 (左+右-)'; break;
+                case 2: statusText = '状态2 (左-右+)'; break;
+                case 3: statusText = '状态3 (左+右-)'; break;
+                case 4: statusText = '状态4 (左-右+)'; break;
+                default: statusText = '未知状态';
+            }
+            document.getElementById('polarityStatusText').textContent = statusText;
+        }
+
+        function updateAnimationSpeed() {
+            animationSpeed = parseFloat(document.getElementById('animationSpeed').value);
+        }
+
+        function setupRaycaster() {
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('click', onMouseClick);
+            window.addEventListener('mouseout', hideHoverInfo);
+        }
+
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+
+            // 清除之前的悬停定时器
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout);
+                hoverTimeout = null;
+                hideHoverInfo();
+            }
+
+            // 移除之前的高亮效果
+            if (highlightedObject) {
+                removeHighlight(highlightedObject);
+                highlightedObject = null;
+            }
+
+            if (intersects.length > 0) {
+                let obj = intersects[0].object;
+
+                // 找到带有用户数据的父对象
+                while (obj && !obj.userData.type && obj.parent) {
+                    obj = obj.parent;
+                }
+
+                if (obj && obj.userData && obj.userData.type) {
+                    // 立即添加高亮效果
+                    highlightObject(obj);
+                    highlightedObject = obj;
+
+                    // 设置0.5秒后显示悬停信息
+                    hoverTimeout = setTimeout(() => {
+                        // 显示悬停信息
+                        showHoverInfo = true;
+                        const hoverInfo = document.getElementById('hoverInfo');
+                        hoverInfo.style.display = 'block';
+                        hoverInfo.style.left = (event.clientX + 15) + 'px';
+                        hoverInfo.style.top = (event.clientY + 15) + 'px';
+
+                        // 设置悬停信息内容
+                        if (obj.userData.type === 'resistor') {
+                            document.getElementById('hoverComponentTitle').textContent = "电阻";
+                            document.getElementById('hoverComponentInfo').textContent = obj.userData.info;
+                        } else if (obj.userData.type === 'wire') {
+                            document.getElementById('hoverComponentTitle').textContent = "导线";
+                            document.getElementById('hoverComponentInfo').textContent = obj.userData.info;
+                        }
+                    }, 500); // 0.5秒
+                }
+            }
+        }
+
+        function onMouseClick(event) {
+            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+
+            if (intersects.length > 0) {
+                let obj = intersects[0].object;
+
+                // 找到带有用户数据的父对象
+                while (obj && !obj.userData.type && obj.parent) {
+                    obj = obj.parent;
+                }
+
+                if (obj && obj.userData && obj.userData.type) {
+                    highlightComponent(obj);
+
+                    // 显示信息
+                    if (obj.userData.info) {
+                        showInfoOverlay = true;
+                        const infoOverlay = document.getElementById('infoOverlay');
+                        infoOverlay.style.display = 'block';
+                        document.getElementById('componentTitle').textContent = 
+                            obj.userData.type === 'resistor' ? "电阻" : "导线";
+                        document.getElementById('componentInfo').textContent = obj.userData.info;
+
+                        // 5秒后隐藏
+                        setTimeout(() => {
+                            infoOverlay.style.display = 'none';
+                        }, 5000);
+                    }
+                }
+            }
+        }
+
+        function hideHoverInfo() {
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout);
+                hoverTimeout = null;
+            }
+            showHoverInfo = false;
+            document.getElementById('hoverInfo').style.display = 'none';
+
+            // 移除高亮效果
+            if (highlightedObject) {
+                removeHighlight(highlightedObject);
+                highlightedObject = null;
+            }
+        }
+
+        function highlightObject(obj) {
+            // 保存原始材质
+            obj.traverse((child) => {
+                if (child.isMesh) {
+                    if (!child.userData.originalMaterial) {
+                        child.userData.originalMaterial = child.material.clone();
+                    }
+
+                    // 创建高亮材质
+                    const highlightMaterial = new THREE.MeshStandardMaterial({
+                        color: 0xf1c40f,
+                        emissive: 0xf1c40f,
+                        emissiveIntensity: 0.5,
+                        roughness: 0.1,
+                        metalness: 0.9
+                    });
+
+                    // 应用高亮材质
+                    child.material = highlightMaterial;
+                }
+            });
+        }
+
+        function removeHighlight(obj) {
+            obj.traverse((child) => {
+                if (child.isMesh && child.userData.originalMaterial) {
+                    child.material = child.userData.originalMaterial;
+                }
+            });
+        }
+
+        function highlightComponent(obj) {
+            // 保存原始材质
+            const originalMaterial = obj.material;
+
+            // 创建高亮材质
+            const highlightMaterial = new THREE.MeshStandardMaterial({
+                color: 0xf1c40f,
+                emissive: 0xf1c40f,
+                emissiveIntensity: 0.8,
+                roughness: 0.1,
+                metalness: 0.9
+            });
+
+            // 应用高亮材质
+            obj.material = highlightMaterial;
+
+            // 2秒后恢复原始材质
+            setTimeout(() => {
+                obj.material = originalMaterial;
+            }, 2000);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            animateCurrentParticles();
+            if (controls) {
+                controls.update();
+            }
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        function handleResize() {
+            const container = document.getElementById('threeContainer');
+            if (container && camera && renderer) {
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+
+                // 更新相机比例
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+
+                // 更新渲染器尺寸
+                renderer.setSize(width, height);
+
+                // 设置像素比例，确保在高DPI显示器上清晰
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            }
+        }
+
+        // 初始化
+        window.addEventListener('load', function() {
+            initThreeJS();
+            window.addEventListener('resize', handleResize);
+        });
+    </script>
+</body>
+</html>

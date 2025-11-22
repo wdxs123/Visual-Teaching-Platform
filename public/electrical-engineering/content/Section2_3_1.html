@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正弦量相量表示法与叠加交互教学平台</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #e74c3c;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            background-color: var(--dark-color);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 2.2em;
+        }
+        
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .control-panel {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .visualization {
+            flex: 2;
+            min-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .wave-container, .phasor-container {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            height: 300px;
+            position: relative;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group h3 {
+            margin-top: 0;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 5px;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .slider-container label {
+            width: 120px;
+            font-weight: bold;
+        }
+        
+        .slider-container input[type="range"] {
+            flex: 1;
+            margin: 0 15px;
+        }
+        
+        .slider-container span {
+            width: 60px;
+            text-align: right;
+            font-family: monospace;
+        }
+        
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .preset-button {
+            background-color: var(--secondary-color);
+        }
+        
+        .preset-button:hover {
+            background-color: #27ae60;
+        }
+        
+        .calculation-result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .formula {
+            font-family: 'Cambria Math', serif;
+            font-size: 1.2em;
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f0f7ff;
+            border-radius: 4px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 900px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .visualization {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>正弦量相量表示法与叠加交互教学平台</h1>
+            <p class="subtitle">探索同频率正弦量的叠加规律与相位差的影响</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="control-group">
+                    <h3>正弦波 1 参数</h3>
+                    <div class="slider-container">
+                        <label for="amplitude1">振幅 (Eₘ₁):</label>
+                        <input type="range" id="amplitude1" min="1" max="10" step="0.1" value="5">
+                        <span id="amplitude1-value">5.0</span>
+                    </div>
+                    <div class="slider-container">
+                        <label for="phase1">初相位 (φ₁):</label>
+                        <input type="range" id="phase1" min="-180" max="180" step="1" value="0">
+                        <span id="phase1-value">0°</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>正弦波 2 参数</h3>
+                    <div class="slider-container">
+                        <label for="amplitude2">振幅 (Eₘ₂):</label>
+                        <input type="range" id="amplitude2" min="1" max="10" step="0.1" value="5">
+                        <span id="amplitude2-value">5.0</span>
+                    </div>
+                    <div class="slider-container">
+                        <label for="phase2">初相位 (φ₂):</label>
+                        <input type="range" id="phase2" min="-180" max="180" step="1" value="0">
+                        <span id="phase2-value">0°</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>操作模式</h3>
+                    <div>
+                        <input type="radio" id="add-mode" name="operation" value="add" checked>
+                        <label for="add-mode">相加 (e = e₁ + e₂)</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="subtract-mode" name="operation" value="subtract">
+                        <label for="subtract-mode">相减 (e = e₁ - e₂)</label>
+                    </div>
+                </div>
+                
+                <div class="preset-buttons">
+                    <button class="preset-button" data-amp1="5" data-phase1="0" data-amp2="5" data-phase2="0">同相 (φ=0°)</button>
+                    <button class="preset-button" data-amp1="5" data-phase1="0" data-amp2="5" data-phase2="180">反相 (φ=180°)</button>
+                    <button class="preset-button" data-amp1="5" data-phase1="0" data-amp2="5" data-phase2="90">正交 (φ=90°)</button>
+                    <button class="preset-button" data-amp1="5" data-phase1="0" data-amp2="5" data-phase2="-120">三相 (φ=-120°)</button>
+                </div>
+                
+                <div class="calculation-result">
+                    <h3>计算结果</h3>
+                    <p>相位差 Δφ = <span id="phase-difference">0</span>°</p>
+                    <p>合成波振幅 Eₘ = <span id="result-amplitude">10.0</span></p>
+                    <p>合成波初相位 φ = <span id="result-phase">0</span>°</p>
+                    <div class="formula">
+                        e(t) = <span id="result-formula">10.0·sin(ωt + 0°)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="visualization">
+                <div class="wave-container">
+                    <canvas id="wave-chart"></canvas>
+                </div>
+                <div class="phasor-container">
+                    <canvas id="phasor-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>正弦量相量表示法教学平台 | 基于基尔霍夫定律的相量形式</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化变量
+        let amplitude1 = 5, phase1 = 0;
+        let amplitude2 = 5, phase2 = 0;
+        let operation = 'add';
+        let waveChart, phasorChart;
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSliders();
+            initializeCharts();
+            updateCalculations();
+            animate();
+        });
+        
+        // 初始化滑块控件
+        function initializeSliders() {
+            // 正弦波1振幅
+            const amplitude1Slider = document.getElementById('amplitude1');
+            const amplitude1Value = document.getElementById('amplitude1-value');
+            amplitude1Slider.addEventListener('input', function() {
+                amplitude1 = parseFloat(this.value);
+                amplitude1Value.textContent = amplitude1.toFixed(1);
+                updateCalculations();
+            });
+            
+            // 正弦波1相位
+            const phase1Slider = document.getElementById('phase1');
+            const phase1Value = document.getElementById('phase1-value');
+            phase1Slider.addEventListener('input', function() {
+                phase1 = parseInt(this.value);
+                phase1Value.textContent = phase1 + '°';
+                updateCalculations();
+            });
+            
+            // 正弦波2振幅
+            const amplitude2Slider = document.getElementById('amplitude2');
+            const amplitude2Value = document.getElementById('amplitude2-value');
+            amplitude2Slider.addEventListener('input', function() {
+                amplitude2 = parseFloat(this.value);
+                amplitude2Value.textContent = amplitude2.toFixed(1);
+                updateCalculations();
+            });
+            
+            // 正弦波2相位
+            const phase2Slider = document.getElementById('phase2');
+            const phase2Value = document.getElementById('phase2-value');
+            phase2Slider.addEventListener('input', function() {
+                phase2 = parseInt(this.value);
+                phase2Value.textContent = phase2 + '°';
+                updateCalculations();
+            });
+            
+            // 操作模式
+            document.querySelectorAll('input[name="operation"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    operation = this.value;
+                    updateCalculations();
+                });
+            });
+            
+            // 预设按钮
+            document.querySelectorAll('.preset-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const amp1 = parseFloat(this.getAttribute('data-amp1'));
+                    const phase1 = parseInt(this.getAttribute('data-phase1'));
+                    const amp2 = parseFloat(this.getAttribute('data-amp2'));
+                    const phase2 = parseInt(this.getAttribute('data-phase2'));
+                    
+                    // 更新滑块和显示值
+                    document.getElementById('amplitude1').value = amp1;
+                    document.getElementById('amplitude1-value').textContent = amp1.toFixed(1);
+                    document.getElementById('phase1').value = phase1;
+                    document.getElementById('phase1-value').textContent = phase1 + '°';
+                    
+                    document.getElementById('amplitude2').value = amp2;
+                    document.getElementById('amplitude2-value').textContent = amp2.toFixed(1);
+                    document.getElementById('phase2').value = phase2;
+                    document.getElementById('phase2-value').textContent = phase2 + '°';
+                    
+                    // 更新变量
+                    amplitude1 = amp1;
+                    amplitude2 = amp2;
+                    phase1 = phase1;
+                    phase2 = phase2;
+                    
+                    updateCalculations();
+                });
+            });
+        }
+        
+        // 初始化图表
+        function initializeCharts() {
+            // 波形图
+            const waveCtx = document.getElementById('wave-chart').getContext('2d');
+            waveChart = new Chart(waveCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: '正弦波 1',
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            data: [],
+                            borderWidth: 2,
+                            pointRadius: 0
+                        },
+                        {
+                            label: '正弦波 2',
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            data: [],
+                            borderWidth: 2,
+                            pointRadius: 0
+                        },
+                        {
+                            label: '合成波',
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            data: [],
+                            borderWidth: 3,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '时间 (t)'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '振幅'
+                            },
+                            min: -15,
+                            max: 15,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: '正弦波叠加'
+                        }
+                    }
+                }
+            });
+            
+            // 相量图
+            const phasorCtx = document.getElementById('phasor-chart').getContext('2d');
+            phasorChart = new Chart(phasorCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: '相量 1',
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.5)',
+                            data: [{x: 0, y: 0}],
+                            pointRadius: 0,
+                            showLine: true
+                        },
+                        {
+                            label: '相量 2',
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'rgba(46, 204, 113, 0.5)',
+                            data: [{x: 0, y: 0}],
+                            pointRadius: 0,
+                            showLine: true
+                        },
+                        {
+                            label: '合成相量',
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.5)',
+                            data: [{x: 0, y: 0}],
+                            pointRadius: 0,
+                            showLine: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        x: {
+                            min: -15,
+                            max: 15,
+                            title: {
+                                display: true,
+                                text: '实部'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        y: {
+                            min: -15,
+                            max: 15,
+                            title: {
+                                display: true,
+                                text: '虚部'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: '相量图'
+                        }
+                    }
+                }
+            });
+            
+            // 初始化数据
+            updateWaveData();
+            updatePhasorData();
+        }
+        
+        // 更新波形数据
+        function updateWaveData() {
+            const timePoints = [];
+            const wave1Data = [];
+            const wave2Data = [];
+            const resultData = [];
+            
+            const angularFrequency = 2 * Math.PI; // ω = 2π rad/s
+            
+            for (let t = 0; t <= 2; t += 0.02) {
+                timePoints.push(t);
+                
+                // 计算正弦波1
+                const wave1 = amplitude1 * Math.sin(angularFrequency * t + phase1 * Math.PI / 180);
+                wave1Data.push(wave1);
+                
+                // 计算正弦波2
+                const wave2 = amplitude2 * Math.sin(angularFrequency * t + phase2 * Math.PI / 180);
+                wave2Data.push(wave2);
+                
+                // 计算合成波
+                let result;
+                if (operation === 'add') {
+                    result = wave1 + wave2;
+                } else {
+                    result = wave1 - wave2;
+                }
+                resultData.push(result);
+            }
+            
+            waveChart.data.labels = timePoints;
+            waveChart.data.datasets[0].data = wave1Data;
+            waveChart.data.datasets[1].data = wave2Data;
+            waveChart.data.datasets[2].data = resultData;
+            waveChart.update();
+        }
+        
+        // 更新相量数据
+        function updatePhasorData() {
+            // 将角度转换为弧度
+            const phase1Rad = phase1 * Math.PI / 180;
+            const phase2Rad = phase2 * Math.PI / 180;
+            
+            // 计算相量的实部和虚部
+            const phasor1X = amplitude1 * Math.cos(phase1Rad);
+            const phasor1Y = amplitude1 * Math.sin(phase1Rad);
+            
+            const phasor2X = amplitude2 * Math.cos(phase2Rad);
+            const phasor2Y = amplitude2 * Math.sin(phase2Rad);
+            
+            // 计算合成相量
+            let resultX, resultY;
+            if (operation === 'add') {
+                resultX = phasor1X + phasor2X;
+                resultY = phasor1Y + phasor2Y;
+            } else {
+                resultX = phasor1X - phasor2X;
+                resultY = phasor1Y - phasor2Y;
+            }
+            
+            // 更新相量图数据
+            phasorChart.data.datasets[0].data = [
+                {x: 0, y: 0},
+                {x: phasor1X, y: phasor1Y}
+            ];
+            
+            phasorChart.data.datasets[1].data = [
+                {x: 0, y: 0},
+                {x: phasor2X, y: phasor2Y}
+            ];
+            
+            phasorChart.data.datasets[2].data = [
+                {x: 0, y: 0},
+                {x: resultX, y: resultY}
+            ];
+            
+            phasorChart.update();
+        }
+        
+        // 更新计算结果
+        function updateCalculations() {
+            // 计算相位差
+            let phaseDiff;
+            if (operation === 'add') {
+                phaseDiff = Math.abs(phase1 - phase2);
+            } else {
+                // 对于减法，相当于第二个相量旋转180度后再相加
+                phaseDiff = Math.abs(phase1 - (phase2 + 180));
+            }
+            
+            // 确保相位差在0-180度范围内
+            phaseDiff = phaseDiff % 360;
+            if (phaseDiff > 180) {
+                phaseDiff = 360 - phaseDiff;
+            }
+            
+            // 计算合成波的振幅和相位
+            const phase1Rad = phase1 * Math.PI / 180;
+            const phase2Rad = phase2 * Math.PI / 180;
+            
+            // 计算相量的实部和虚部
+            const phasor1X = amplitude1 * Math.cos(phase1Rad);
+            const phasor1Y = amplitude1 * Math.sin(phase1Rad);
+            
+            let phasor2X, phasor2Y;
+            if (operation === 'add') {
+                phasor2X = amplitude2 * Math.cos(phase2Rad);
+                phasor2Y = amplitude2 * Math.sin(phase2Rad);
+            } else {
+                // 减法相当于加上一个反向的相量
+                phasor2X = amplitude2 * Math.cos(phase2Rad + Math.PI);
+                phasor2Y = amplitude2 * Math.sin(phase2Rad + Math.PI);
+            }
+            
+            // 计算合成相量
+            const resultX = phasor1X + phasor2X;
+            const resultY = phasor1Y + phasor2Y;
+            
+            // 计算合成振幅
+            const resultAmplitude = Math.sqrt(resultX * resultX + resultY * resultY);
+            
+            // 计算合成相位（弧度）
+            let resultPhaseRad = Math.atan2(resultY, resultX);
+            // 转换为角度
+            let resultPhase = resultPhaseRad * 180 / Math.PI;
+            // 确保在-180到180度范围内
+            if (resultPhase > 180) resultPhase -= 360;
+            if (resultPhase < -180) resultPhase += 360;
+            
+            // 更新UI显示
+            document.getElementById('phase-difference').textContent = phaseDiff.toFixed(1);
+            document.getElementById('result-amplitude').textContent = resultAmplitude.toFixed(2);
+            document.getElementById('result-phase').textContent = resultPhase.toFixed(1);
+            
+            // 更新公式显示
+            const formulaElement = document.getElementById('result-formula');
+            formulaElement.innerHTML = `${resultAmplitude.toFixed(2)}·sin(ωt ${resultPhase >= 0 ? '+' : ''} ${resultPhase.toFixed(1)}°)`;
+            
+            // 更新图表
+            updateWaveData();
+            updatePhasorData();
+        }
+        
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+            // 这里可以添加需要持续更新的动画效果
+        }
+    </script>
+</body>
+</html>

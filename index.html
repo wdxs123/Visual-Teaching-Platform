@@ -1,13 +1,106 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vite App</title>
+    <meta name="description" content="电工学学习系统 - 专业的电工学在线学习平台">
+    <meta name="keywords" content="电工学,电气工程,电路分析,在线学习">
+    <meta name="author" content="电工学学习系统">
+    
+    <!-- 主题颜色 -->
+    <meta name="theme-color" content="#3498db">
+    
+    <!-- iOS Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="电工学学习系统">
+    
+    <!-- Windows -->
+    <meta name="msapplication-TileColor" content="#3498db">
+    <meta name="msapplication-TileImage" content="/icons/ms-icon-144x144.png">
+    
+    <title>电工学学习系统 - 专业的在线学习平台</title>
+    
+    <!-- Font Awesome 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" 
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- 预加载关键资源 -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    
+    <!-- 样式预加载（如果有关键CSS） -->
+    <!-- <link rel="preload" href="/src/assets/main.scss" as="style"> -->
   </head>
   <body>
     <div id="app"></div>
+    
+    <!-- 加载动画（可选） -->
+    <div id="loading-app" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #f5f7fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease;
+    ">
+      <div style="
+        text-align: center;
+        color: #3498db;
+      ">
+        <i class="fas fa-bolt" style="font-size: 48px; margin-bottom: 20px;"></i>
+        <h2 style="margin-bottom: 10px;">电工学学习系统</h2>
+        <p>加载中...</p>
+      </div>
+    </div>
+    
     <script type="module" src="/src/main.js"></script>
+    
+    <script>
+      // 移除加载动画
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loadingElement = document.getElementById('loading-app');
+          if (loadingElement) {
+            loadingElement.style.opacity = '0';
+            setTimeout(function() {
+              loadingElement.remove();
+            }, 300);
+          }
+        }, 500);
+      });
+      
+      // 如果应用加载失败，显示错误信息
+      window.addEventListener('error', function(e) {
+        console.error('应用加载错误:', e.error);
+        const loadingElement = document.getElementById('loading-app');
+        if (loadingElement) {
+          loadingElement.innerHTML = `
+            <div style="text-align: center; color: #e74c3c;">
+              <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px;"></i>
+              <h2>加载失败</h2>
+              <p>请刷新页面重试</p>
+              <button onclick="window.location.reload()" style="
+                margin-top: 20px;
+                padding: 10px 20px;
+                background: #3498db;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+              ">重新加载</button>
+            </div>
+          `;
+        }
+      });
+    </script>
   </body>
 </html>

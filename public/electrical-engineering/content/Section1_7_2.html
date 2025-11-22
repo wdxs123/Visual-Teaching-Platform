@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- 修复这里 -->
+    <title>互感元件交互式学习平台</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135极速化修改deg, #ffffff 0%, #f5f7fa 100%);
+            color: #333;
+            overflow-x: hidden;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+        }
+        .content {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .visualization {
+            flex: 1;
+            min-width: 600px;
+            height: 500px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            position: relative;
+            border: 1px solid #e9ecef;
+        }
+        #canvas {
+            width: 100%;
+            height: 100%;
+        }
+        .controls {
+            flex: 1;
+            min-width: 350px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e9ecee;
+        }
+        .panel {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+        }
+        h2 i {
+            margin-right: 10px;
+            font-size: 1.3rem;
+            color: #4ca1af;
+        }
+        .formula {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: center;
+            font-size: 1.4rem;
+            font-family: 'Cambria Math', serif;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            color: #2c3e50;
+        }
+        .formula:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .slider-container {
+            margin: 20px 0;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: #5a6c7d;
+            font-weight: 500;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #dee2e6;
+            border-radius: 5px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4ca1af;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(76, 161, 175, 0.5);
+            transition: all 0.2s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #4ca1af 0%, #2c5364 100%);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(76, 161, 175, 0.3);
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        .polarity-config {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .config-option {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            border: 1px solid #e9ecef;
+            color: #5a6c7d;
+        }
+        .config-option:hover {
+            background: rgba(76, 161, 175, 0.1);
+        }
+        .config-option.active {
+            background: rgba(76, 161, 175, 0.2);
+            border-color: #4ca1af;
+            color: #2c5364;
+            box-shadow: 0 0 10px rgba(76, 161, 175, 0.2);
+        }
+        .value-display {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            color: #5a6c7d;
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        .effects {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20极速化修改px;
+            background: rgba(255, 255, 极速化修改255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 300px;
+            backdrop-filter: blur(5px);
+            border: 1px solid #e9ecef;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            color: #5a6c7d;
+        }
+        .info-panel h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 1100px) {
+            .content {
+                flex-direction: column;
+            }
+            .visualization, .controls {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <div class="visualization">
+                <div id="canvas"></div>
+                <div class="effects" id="effects"></div>
+                <div class="info-panel">
+                    <h3>实时数据</h3>
+                    <div class="value-display">
+                        <span>磁场强度:</span>
+                        <span id="magnetic-field">1 T</span>
+                    </div>
+                    <div class="value-display">
+                        <span>感应电动势:</span>
+                        <span id="emf">13 V</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="panel">
+                    <h2><i>⚡</i> 特性方程</h2>
+                    <div class="formula" id="formula1">
+                        u<sub>L1</sub> = L<sub>1</sub> di<sub>1</sub>/dt ± M di<sub>2</sub>/dt
+                    </div>
+                    <div class="formula" id="formula2">
+                        u<sub>L2</sub> = L<sub>2</sub> di<sub>2</sub>/dt ± M di<sub>1</sub>/dt
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h2><i>🎛️</i> 参数控制</h2>
+                    
+                    <div class="polarity-config">
+                        <div class="config-option active" id="same-polarity">
+                            <h3>同极性端</h3>
+                            <p>电流指向同极性端</p>
+                        </div>
+                        <div class="config-option" id="opposite-polarity">
+                            <h3>异极性端</h3>
+                            <p>电流指向异极性端</p>
+                        </div>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>线圈1电流 i<sub>1</sub></span>
+                            <span id="current1-value">0 A</span>
+                        </div>
+                        <input type="range" id="current1-slider" min="-10" max="10" step="1" value="0">
+                    </div>
+                    
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>线圈2电流 i<sub>2</sub></span>
+                            <span id="current2-value">0 A</span>
+                        </div>
+                        <input type="range" id="current2-slider" min="-10" max="10" step="1" value="0">
+                    </div>
+                    
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>电流变化率</span>
+                            <span id="change-rate-value">30%</span>
+                        </div>
+                        <input type="range" id="change-rate" min="0" max="100" step="1" value="30">
+                    </div>
+                    
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>箭头速度</span>
+                            <span id="arrow-speed-value">慢</span>
+                        </div>
+                        <input type="range" id="arrow-speed" min="1" max="5" step="1" value="2">
+                    </div>
+                    
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>磁力线速度</span>
+                            <span id="magnetic-speed-value">慢</span>
+                        </div>
+                        <input type="range" id="magnetic-speed" min="1" max="5" step="1" value="1">
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button id="demo-btn">🔁 演示自动变化</button>
+                        <button id="reset-btn">↺ 重置</button>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h2><i>📊</i> 数据监测</h2>
+                    
+                    <div class="value-display">
+                        <span>自感电动势 e<sub>11</sub>:</span>
+                        <span id="e11-value">0 V</span>
+                    </div>
+                    <div class="value-display">
+                        <span>互感电动势 e<sub>12</sub>:</span>
+                        <span id="e12-value">0 V</span>
+                    </div>
+                    <div class="value-display">
+                        <span>自感电动势 e<sub>22</sub>:</span>
+                        <span id="e22-value">0 V</span>
+                    </div>
+                    <div class="value-display">
+                        <span>互感电动势 e<sub>21</sub>:</span>
+                        <span id="e21-value">0 V</span>
+                    </div>
+                    
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="color-box" style="background: #e74c3c;"></div>
+                            <span>线圈1</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="color-box" style="background: #3498db;"></div>
+                            <span>线圈2</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="color-box" style="background: #2ecc71;"></div>
+                            <span>磁场</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>互感元件交互式学习平台 © 2023 | 基于Three.js构建</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化Three.js场景
+        let scene, camera, renderer;
+        let coil1, coil2;
+        let current1 = 0, current2 = 0;
+        let changeRate = 0.3;
+        let arrowSpeed = 0.3; // 默认箭头速度
+        let magneticSpeed = 0.01; // 显著降低默认磁感线速度
+        let isSamePolarity = true;
+        let isAutoDemo = false;
+        let demoTime = 0;
+        let magneticLines = [];
+        let particles = [];
+        let lastTime = 0;
+        let currentArrows = []; // 存储电流箭头
+        let lastMagneticUpdate = 0; // 跟踪上次磁感线更新时间
+
+        // 初始化场景
+        function init() {
+            // 创建场景
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf8f9fa);
+            
+            // 创建相机
+            camera = new THREE.PerspectiveCamera(75, document.querySelector('.visualization').clientWidth / 
+                document.querySelector('.visualization').clientHeight, 0.1, 1000);
+            camera.position.z = 10;
+            camera.position.y = 3;
+            
+            // 创建渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(document.querySelector('.visualization').clientWidth, 
+                             document.querySelector('.visualization').clientHeight);
+            renderer.shadowMap.enabled = true;
+            document.getElementById('canvas').appendChild(renderer.domElement);
+            
+            // 添加光源
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            
+            // 修复点光源变量名（修正拼写错误）
+            const pointLight = new THREE.PointLight(0x4ca1af, 0.5, 100);
+            pointLight.position.set(0, 0, 5);
+            scene.add(pointLight);
+            
+            // 创建坐标轴
+            const axesHelper = new THREE.AxesHelper(5);
+            scene.add(axesHelper);
+            
+            // 创建网格平面
+            const gridHelper = new THREE.GridHelper(20, 20, 0xcccccc, 0xcccccc);
+            gridHelper.material.opacity = 0.2;
+            gridHelper.material.transparent = true;
+            gridHelper.position.y = -2;
+            scene.add(gridHelper);
+            
+            // 创建互感线圈
+            createCoils();
+            
+            // 创建磁力线
+            createMagneticField();
+            
+            // 添加事件监听器
+            setupEventListeners();
+            
+            // 开始动画循环
+            animate();
+            
+            // 窗口大小调整响应
+            window.addEventListener('resize', onWindowResize);
+        }
+        
+        // 创建线圈
+        function createCoils() {
+            const coilGeometry = new THREE.TorusGeometry(2, 0.2, 16, 100);
+            const wireMaterial1 = new THREE.MeshPhongMaterial({ color: 0xe74c3c });
+            const wireMaterial2 = new THREE.MeshPhongMaterial({ color: 0x3498db });
+            
+            // 创建线圈1
+            coil1 = new THREE.Group();
+            for (let i = 0; i < 8; i++) {
+                const ring = new THREE.Mesh(coilGeometry, wireMaterial1);
+                ring.rotation.x = Math.PI / 2;
+                ring.position.y = i * 0.3 - 1;
+                ring.castShadow = true;
+                coil1.add(ring);
+            }
+            coil1.position.x = -2;
+            scene.add(coil1);
+            
+            // 创建线圈2
+            coil2 = new THREE.Group();
+            for (let i = 0; i < 8; i++) {
+                const ring = new THREE.Mesh(coilGeometry, wireMaterial2);
+                ring.rotation.x = Math.PI / 2;
+                ring.position.y = i * 0.3 - 1;
+                ring.castShadow = true;
+                coil2.add(ring);
+            }
+            coil2.position.x = 2;
+            scene.add(coil2);
+            
+            // 添加极性标记
+            addPolarityMarks();
+            
+            // 添加电流方向指示器
+            addCurrentIndicators();
+        }
+        
+        // 添加极性标记
+        function addPolarityMarks() {
+            // 清除现有的极性标记
+            scene.children.filter(child => child.isPolarityMark).forEach(mark => scene.remove(mark));
+            
+            // 线圈1极性标记
+            const dotGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+            const dotMaterial = new THREE.MeshBasicMaterial({ color: 0x2c3e50 });
+            
+            const dot1 = new THREE.Mesh(dotGeometry, dotMaterial);
+            dot1.position.set(-2, 1.5, 2);
+            dot1.isPolarityMark = true;
+            scene.add(dot1);
+            
+            // 线圈2极性标记
+            const dot2 = new THREE.Mesh(dotGeometry, dotMaterial);
+            dot2.position.set(2, isSamePolarity ? 1.5 : -1.5, 2);
+            dot2.isPolarity极速化修改Mark = true;
+            scene.add(dot2);
+        }
+        
+        // 添加电流方向指示器（关键修复）
+        function addCurrentIndicators() {
+            // 清除现有的指示器
+            scene.children.filter(child => child.isArrowHelper).forEach(arrow => scene.remove(arrow));
+            currentArrows = [];
+            
+            // 计算电流方向
+            const dir1 = new THREE.Vector3(0, current1 >= 0 ? 1 : -1, 0);
+            const dir2 = new THREE.Vector3(0, current2 >= 0 ? 1 : -1, 0);
+            
+            // 添加箭头指示器
+            const arrowLength = Math.max(0.5, Math.abs(current1) / 3);
+            const arrowHelper1 = new THREE.ArrowHelper(
+                dir1, 
+                new THREE.Vector3(-2, current1 >= 0 ? -2.5 : 2.5, 0), 
+                arrowLength, 
+                0xe74c3c,
+                0.5,  // 头部长度
+                0.3   // 头部宽度
+            );
+            arrowHelper1.isArrowHelper = true;
+            scene.add(arrowHelper1);
+            currentArrows.push(arrowHelper1);
+            
+            const arrowLength2 = Math.max(0.5, Math.abs(current2) / 3);
+            const arrowHelper2 = new THREE.ArrowHelper(
+                dir2, 
+                // 修复这里的Vector3拼写错误
+                new THREE.Vector3(2, current2 >= 0 ? -2.5 : 2.5, 0), // 修复这里
+                0.3   // 头部宽度
+            );
+            arrowHelper2.isArrowHelper = true;
+            scene.add(arrowHelper2);
+            currentArrows.push(arrowHelper2);
+            
+            // 添加动态电流箭头（每个线圈只保留一个）
+            createDynamicCurrentArrows();
+            
+            // 添加电流粒子效果
+            updateParticles();
+        }
+        
+        // 创建动态电流箭头（每个线圈只保留一个）
+        function createDynamicCurrentArrows() {
+            // 清除现有的动态箭头
+            scene.children.filter(child => child.isDynamicArrow).forEach(arrow => scene.remove(arrow));
+            
+            if (Math.abs(current1) > 0) {
+                // 为线圈1创建动态箭头（只创建一个）
+                const arrow = createMovingArrow(0xe74c3c, -2, current1 > 0);
+                scene.add(arrow);
+            }
+            
+            if (Math.abs(current2) > 0) {
+                // 为线圈2创建动态箭头（只创建一个）
+                const arrow = createMovingArrow(0x3498db, 2, current2 > 0);
+                scene.add(arrow);
+            }
+        }
+        
+        // 创建移动箭头
+        function createMovingArrow(color, xPos, isUpward) {
+            const direction = isUpward ? 1 : -1;
+            const arrowLength = 0.8; // 增大箭头尺寸使其更明显
+            
+            // 创建箭头
+            const arrow = new THREE.ArrowHelper(
+                new THREE.Vector3(0, direction, 0),
+                new THREE.Vector3(
+                    xPos,
+                    isUpward ? -1.5 : 1.5, // 调整位置到线圈中心
+                    0
+                ),
+                arrowLength,
+                color,
+                0.5,  // 头部长度
+                0.4   // 头部宽度
+            );
+            
+            // 添加自定义属性
+            arrow.isDynamicArrow = true;
+            arrow.speed = (0.2 + Math.random() * 0.3) * arrowSpeed;
+            arrow.direction = direction;
+            arrow.xPos = xPos;
+            arrow.offset = Math.random() * Math.PI * 2;
+            
+            return arrow;
+        }
+        
+        // 更新动态箭头
+        function updateDynamicArrows(time) {
+            scene.children.filter(child => child.isDynamicArrow).forEach(arrow => {
+                // 更新箭头位置 - 使用更慢的速度
+                const speed = arrow.speed * changeRate * Math.max(Math.abs(current1), Math.abs(current2)) / 20;
+                arrow.position.y += arrow.direction * speed * 0.05;
+                
+                // 如果箭头移出视野，重置位置
+                if ((arrow.direction > 0 && arrow.position.y > 3) || 
+                    (arrow.direction < 0 && arrow.position.y < -3)) {
+                    arrow.position.y = arrow.direction > 0 ? -3 : 3;
+                }
+                
+                // 添加轻微的水平摆动
+                arrow.position.x = arrow.xPos + Math.sin(time + arrow.offset) * 0.1;
+            });
+        }
+        
+        // 创建磁力线
+        function createMagneticField() {
+            // 清除现有的磁力线
+            magneticLines.forEach(line => scene.remove(line));
+            magneticLines = [];
+            
+            // 创建磁力线
+            const lineMaterial = new THREE.LineBasicMaterial({ 
+                color: 0x2ecc71,
+                transparent: true,
+                opacity: 0.7
+            });
+            
+            // 根据电流大小计算磁力线数量
+            const lineCount = Math.floor((Math.abs(current1) + Math.abs(current2)) / 2) + 3;
+            
+            for (let i = 0; i < lineCount; i++) {
+                const points = [];
+                const radius = 1.5 + Math.random() * 1.5;
+                const height = Math.random() * 4 - 2;
+                
+                for (let j = 0; j < 100; j++) {
+                    const angle = j * 0.1;
+                    const x = Math.cos(angle) * radius;
+                    const y = Math.sin(angle) * radius + height;
+                    points.push(new THREE.Vector3(x, y, 0));
+                }
+                
+                const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(lineGeometry, lineMaterial);
+                scene.add(line);
+                magneticLines.push(line);
+            }
+        }
+        
+        // 更新磁力线动画（大大降低速度）
+        function updateMagneticLines(time) {
+            // 每秒只更新磁力线一次（大约）
+            if (time - lastMagneticUpdate < 1) return;
+            
+            lastMagneticUpdate = time;
+            
+            magneticLines.forEach((line, index) => {
+                // 使用缓动函数实现更平滑、缓慢的变化
+                const progress = (time * magneticSpeed) % 1;
+                const easeValue = easeInOutQuad(progress);
+                
+                // 更轻微的外观变化
+                const opacity = 0.7 + 0.2 * easeValue;
+                line.material.opacity = opacity;
+                
+                // 大大减少位移幅度
+                const displacement = 0.05 * easeValue;
+                line.position.z = displacement;
+            });
+        }
+        
+        // 缓动函数：二次缓入缓出
+        function easeInOutQuad(t) {
+            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        }
+        
+        // 更新粒子效果
+        function updateParticles() {
+            // 清除现有粒子
+            particles.forEach(particle => scene.remove(particle));
+            particles = [];
+            
+            // 创建粒子材质
+            const particleMaterial1 = new THREE.PointsMaterial({
+                color: 0xe74c3c,
+                size: 0.1,
+                transparent: true,
+                blending: THREE.AdditiveBlending
+            });
+            
+            const particleMaterial2 = new THREE.PointsMaterial({
+                color: 0x3498db,
+                size: 0.1,
+                transparent: true,
+                blending: THREE.AdditiveBlending
+            });
+            
+            // 创建线圈1的粒子
+            if (Math.abs(current1) > 0) {
+                const particleCount = Math.floor(Math.abs(current1) * 10);
+                const particles1 = new THREE.BufferGeometry();
+                const positions1 = new Float32Array(particleCount * 3);
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const i3 = i * 3;
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = 2 + Math.random() * 0.2;
+                    
+                    positions1[i3] = -2 + Math.cos(angle) * radius;
+                    positions1[i3 + 1] = Math.sin(angle) * radius;
+                    positions1[i3 + 2] = Math.random() * 0.1;
+                }
+                
+                particles1.setAttribute('position', new THREE.BufferAttribute(positions1, 3));
+                const particleSystem1 = new THREE.Points(particles1, particleMaterial1);
+                scene.add(particleSystem1);
+                particles.push(particleSystem1);
+            }
+            
+            // 创建线圈2的粒子
+            if (Math.abs(current2) > 0) {
+                const particleCount = Math.floor(Math.abs(current2) * 10);
+                const particles2 = new THREE.BufferGeometry();
+                const positions2 = new Float32Array(particleCount * 3);
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const i3 = i * 3;
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = 2 + Math.random() * 0.2;
+                    
+                    positions2[i3] = 2 + Math.cos(angle) * radius;
+                    positions2[i3 + 1] = Math.sin(angle) * radius;
+                    positions2[i3 + 2] = Math.random() * 0.1;
+                }
+                
+                particles2.setAttribute('position', new THREE.BufferAttribute(positions2, 3));
+                const particleSystem2 = new THREE.Points(particles2, particleMaterial2);
+                scene.add(particleSystem2);
+                particles.push(particleSystem2);
+            }
+        }
+        
+        // 更新公式显示
+        function updateFormula() {
+            const sign = isSamePolarity ? "+" : "-";
+            document.getElementById('formula1').innerHTML = 
+                `u<sub>L1</sub> = L<sub>1</sub> di<sub>1</sub>/dt ${sign} M di<sub>2</sub>/dt`;
+            document.getElementById('formula2').innerHTML = 
+                `u<sub>L2</sub> = L<sub>2</sub> di<sub>2</sub>/dt ${sign} M di<sub>1</sub>/dt`;
+        }
+        
+        // 更新数据监测
+        function updateDataMonitor() {
+            // 计算电动势 (简化模型)
+            const e11 = Math.round(-5 * current1 * changeRate);
+            const e22 = Math.round(-5 * current2 * changeRate);
+            const e12 = Math.round(isSamePolarity ? 2 * current2 * changeRate : -2 * current2 * changeRate);
+            const e21 = Math.round(isSamePolarity ? 2 * current1 * changeRate : -2 * current1 * changeRate);
+            
+            document.getElementById('e11-value').textContent = e11 + " V";
+            document.getElementById('e22-value').textContent = e22 + " V";
+            document.getElementById('e12-value').textContent = e12 + " V";
+            document.getElementById('e21-value').textContent = e21 + " V";
+            
+            // 更新磁场强度和总电动势
+            const magneticField = Math.round((Math.abs(current1) + Math.abs(current2)) * 0.1);
+            const totalEMF = Math.round(Math.abs(e11 + e12) + Math.abs(e21 + e22));
+            
+            document.getElementById('magnetic-field').textContent = magneticField + " T";
+            document.getElementById('emf').textContent = totalEMF + " V";
+            
+            // 更新视觉效果
+            createMagneticField();
+            createDynamicCurrentArrows();
+        }
+        
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 电流滑块监听
+            document.getElementById('current1-slider').addEventListener('input', function(e) {
+                current1 = parseInt(e.target.value);
+                document.getElementById('current1-value').textContent = current1 + " A";
+                addCurrentIndicators();
+                updateDataMonitor();
+            });
+            
+            document.getElementById('current2-slider').addEventListener('input', function(e) {
+                current2 = parseInt(e.target.value);
+                document.getElementById('current2-value').textContent = current2 + " A";
+                addCurrentIndicators();
+                updateDataMonitor();
+            });
+            
+            // 变化率滑块监听
+            document.getElementById('change-rate').addEventListener('input', function(e) {
+                changeRate = parseInt(e.target.value) / 100;
+                document.getElementById('change-rate-value').textContent = Math.round(changeRate * 100) + "%";
+                updateDataMonitor();
+            });
+            
+            // 箭头速度滑块监听
+            document.getElementById('arrow-speed').addEventListener('input', function(e) {
+                const speedValue = parseInt(e.target.value);
+                // 将1-5的速度值转换为0.1-0.5的速度系数
+                arrowSpeed = speedValue * 0.1;
+                
+                // 更新显示文本
+                const speedText = ["极慢", "慢", "中", "快", "极快"];
+                document.getElementById('arrow-speed-value').textContent = speedText[speedValue - 1];
+                
+                // 更新现有箭头的速度
+                scene.children.filter(child => child.isDynamicArrow).forEach(arrow => {
+                    arrow.speed = (0.2 + Math.random() * 0.3) * arrowSpeed;
+                });
+            });
+            
+            // 磁力线速度滑块监听（更新为更慢的速度范围）
+            document.getElementById('magnetic-speed').addEventListener('input', function(e) {
+                const speedValue = parseInt(e.target.value);
+                // 将1-5的值映射到0.005-0.025范围
+                magneticSpeed = speedValue * 0.005;
+                
+                // 更新显示文本
+                const speedText = ["极慢", "慢", "中", "快", "较快"];
+                document.getElementById('magnetic-speed-value').textContent = speedText[speedValue - 1];
+            });
+            
+            // 极性配置切换
+            document.getElementById('same-polarity').addEventListener('click', function() {
+                isSamePolarity = true;
+                this.classList.add('active');
+                document.getElementById('opposite-polarity').classList.remove('active');
+                updateFormula();
+                addPolarityMarks();
+                updateDataMonitor();
+            });
+            
+            document.getElementById('opposite-polarity').addEventListener('click', function() {
+                isSamePolarity = false;
+                this.classList.add('active');
+                document.getElementById('same-polarity').classList.remove('active');
+                updateFormula();
+                addPolarityMarks();
+                updateDataMonitor();
+            });
+            
+            // 演示按钮
+            document.getElementById('demo-btn').addEventListener('click', function() {
+                isAutoDemo = !isAutoDemo;
+                this.textContent = isAutoDemo ? '⏹️ 停止演示' : '🔁 演示自动变化';
+                demoTime = 0;
+            });
+            
+            // 重置按钮
+            document.getElementById('reset-btn').addEventListener('click', function() {
+                current1 = 0;
+                current2 = 0;
+                changeRate = 0.3;
+                arrowSpeed = 0.3;
+                magneticSpeed = 0.01; // 重置为更慢的默认磁感线速度
+                document.getElementById('current1-slider').value = 0;
+                document.getElementById('current2-slider').value = 0;
+                document.getElementById('change-rate').value = 30;
+                document.getElementById('arrow-speed').value = 3;
+                document.getElementById('magnetic-speed').value = 2;
+                document.getElementById('current1-value').textContent = '0 A';
+                document.getElementById('current2-value').textContent = '0 A';
+                document.getElementById('change-rate-value').textContent = '30%';
+                document.getElementById('arrow-speed-value').textContent = '中';
+                document.getElementById('magnetic-speed-value').textContent = '中';
+                isSamePolarity = true;
+                document.getElementById('same-polarity').classList.add('active');
+                document.getElementById('opposite-polarity').classList.remove('active');
+                isAutoDemo = false;
+                document.getElementById('demo-btn').textContent = '🔁 演示自动变化';
+                addCurrentIndicators();
+                updateFormula();
+                updateDataMonitor();
+            });
+        }
+        
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const time = performance.now() * 0.001;
+            const delta = time - lastTime;
+            lastTime = time;
+            
+            if (isAutoDemo) {
+                demoTime += delta * 0.2; // 降低自动演示速度
+                current1 = Math.round(Math.sin(demoTime) * 8);
+                current2 = Math.round(Math.cos(demoTime * 0.7) * 8);
+                
+                document.getElementById('current1-slider').value = current1;
+                document.getElementById('current2-slider').value = current2;
+                document.getElementById('current1-value').textContent = current1 + " A";
+                document.getElementById('current2-value').textContent = current2 + " A";
+                
+                addCurrentIndicators();
+                updateDataMonitor();
+            }
+            
+            // 线圈旋转动画 - 减慢速度
+            coil1.rotation.y += 0.005 * changeRate * Math.sign(current1) || 0;
+            coil2.rotation.y += 0.005 * changeRate * Math.sign(current2) || 0;
+            
+            // 磁力线动画 - 使用大大减慢的速度
+            updateMagneticLines(time);
+            
+            // 粒子动画 - 减慢速度
+            particles.forEach(particle => {
+                particle.rotation.y += 0.005 * changeRate;
+            });
+            
+            // 更新动态箭头
+            updateDynamicArrows(time);
+            
+            renderer.render(scene, camera);
+            
+            // 添加Canvas效果
+            addCanvasEffects();
+        }
+        
+        // 添加Canvas效果
+        function addCanvasEffects() {
+            const effects = document.getElementById('effects');
+            effects.innerHTML = '';
+            
+            if (Math.abs(current1) > 0 || Math.abs(current2) > 0) {
+                const fieldStrength = (Math.abs(current1) + Math.abs(current2)) * 5;
+                
+                for (let i = 0; i < fieldStrength; i++) {
+                    const spark = document.createElement('div');
+                    spark.style.position = 'absolute';
+                    spark.style.width = '2px';
+                    spark.style.height = Math.random() * 20 + 5 + 'px';
+                    spark.style.background = 'linear-gradient(to bottom, transparent, #2ecc71, transparent)';
+                    spark.style.left = Math.random() * 100 + '%';
+                    spark.style.top = Math.random() * 100 + '%';
+                    spark.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    spark.style.opacity = Math.random() * 0.3 + 0.2;
+                    spark.style.boxShadow = '0 0 5px #2ecc71';
+                    effects.appendChild(spark);
+                }
+            }
+        }
+        
+        // 窗口大小调整响应
+        function onWindowResize() {
+            camera.aspect = document.querySelector('.visualization').clientWidth / 
+                            document.querySelector('.visualization').clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(document.querySelector('.visualization').clientWidth, 
+                             document.querySelector('.visualization').clientHeight);
+        }
+        
+        // 初始化应用
+        init();
+        updateFormula();
+        updateDataMonitor();
+        
+        // 设置初始数据
+        document.getElementById('magnetic-field').textContent = "1 T";
+        document.getElementById('emf').textContent = "13 V";
+        document.getElementById('arrow-speed-value').textContent = "中";
+        document.getElementById('magnetic-speed-value').textContent = "慢";
+    </script>
+</body>
+</html>

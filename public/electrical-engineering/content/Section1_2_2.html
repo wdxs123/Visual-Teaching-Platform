@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电容核心知识点交互教学平台</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: #ffffff; /* 白色背景 */
+            color: #333; /* 深色文字 */
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 15px;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+            flex-shrink: 0;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #1e5799, #207cca);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #555;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            gap: 15px;
+            overflow: hidden;
+            height: 100%;
+        }
+        
+        .visualization-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .canvas-container {
+            flex: 2;
+            background: #f8f9fa;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #e0e0e0;
+        }
+        
+        #simulation {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .interactive-demo {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .control-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            overflow-y: auto;
+            gap: 15px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .panel-section {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .panel-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .panel-title h2 {
+            font-size: 1.3rem;
+            margin-left: 10px;
+            color: #1e5799;
+        }
+        
+        .icon {
+            background: #207cca;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: white;
+        }
+        
+        .slider-container {
+            margin: 12px 0;
+        }
+        
+        .slider-container label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 7px;
+            background: linear-gradient(to right, #1e5799, #207cca);
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            background: #fff;
+            border-radius: 50%;
+            border: 2px solid #207cca;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(30, 87, 153, 0.5);
+        }
+        
+        .value-display {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+        
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        button {
+            padding: 10px 12px;
+            border: none;
+            border-radius: 7px;
+            background: linear-gradient(to right, #1e5799, #207cca);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(30, 87, 153, 0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(30, 87, 153, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        #toggleRefPolarity {
+            background: linear-gradient(to right, #d35400, #e67e22);
+        }
+        
+        #toggleRefCurrent {
+            background: linear-gradient(to right, #27ae60, #2ecc71);
+        }
+        
+        #resetBtn {
+            background: linear-gradient(to right, #7f8c8d, #95a5a6);
+        }
+        
+        .formula-container {
+            background: #f1f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 12px;
+            border: 1px solid #d0e3f0;
+        }
+        
+        #formulaBox {
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 12px;
+            background: #ffffff;
+            border-radius: 7px;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e0e0e0;
+            color: #1e5799;
+        }
+        
+        .chart-container {
+            height: 180px;
+            margin-top: 12px;
+        }
+        
+        .tabs-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .tab-nav {
+            display: flex;
+            margin-bottom: 12px;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            background: #e9ecef;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(to right, #1e5799, #207cca);
+            color: white;
+        }
+        
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            background: #ffffff;
+            border-radius: 0 0 8px 8px;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .tab {
+            display: none;
+        }
+        
+        .tab.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .param-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .param-card {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .param-value {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #207cca;
+            margin: 8px 0;
+        }
+        
+        .learning-guide {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            max-width: 280px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(30, 87, 153, 0.9), rgba(32, 124, 202, 0.9));
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            animation: pulse 3s infinite;
+            z-index: 100;
+            font-size: 0.9rem;
+            color: white;
+        }
+        
+        .guide-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .guide-title i {
+            font-size: 1.3rem;
+            margin-right: 8px;
+        }
+        
+        .guide-content {
+            line-height: 1.4;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(32, 124, 202, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(32, 124, 202, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(32, 124, 202, 0); }
+        }
+        
+        .demo-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .demo-display {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .demo-visual {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+        }
+        
+        .charge-indicator {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin: 10px 0;
+        }
+        
+        .plate {
+            width: 100px;
+            height: 8px;
+            background: #3498db;
+            position: relative;
+        }
+        
+        .positive-plate {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+        }
+        
+        .negative-plate {
+            background: linear-gradient(to right, #3498db, #2980b9);
+        }
+        
+        .charge-status {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #207cca;
+            margin-top: 10px;
+        }
+        
+        .direction-indicator {
+            font-size: 2rem;
+            margin: 10px 0;
+            color: #27ae60;
+        }
+        
+        .equation-display {
+            margin: 15px 0;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #207cca;
+        }
+        
+        .knowledge-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-left: 4px solid #207cca;
+        }
+        
+        .knowledge-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #1e5799;
+        }
+        
+        .knowledge-card p, .knowledge-card ul {
+            color: #555;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 12px;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            flex-shrink: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .canvas-container, .interactive-demo {
+                height: 300px;
+            }
+            
+            .control-panel {
+                max-height: 400px;
+            }
+        }
+        
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .speed-label {
+            font-size: 0.9rem;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>电容核心知识点交互教学平台</h1>
+            <p class="subtitle">通过动态交互模型深入理解电容器的电荷极性、参考方向与公式推导</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="visualization-section">
+                <div class="canvas-container">
+                    <div id="simulation"></div>
+                    <div class="learning-guide">
+                        <div class="guide-title">
+                            <i>💡</i>
+                            <h3>学习引导</h3>
+                        </div>
+                        <div class="guide-content">
+                            <p>调节电容值和电压值观察电荷变化，尝试不同的参考方向组合，理解公式中的符号变化关系。</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="interactive-demo">
+                    <h3 class="panel-title">
+                        <div class="icon">🔌</div>
+                        <h2>充放电演示</h2>
+                    </h3>
+                    <div class="demo-controls">
+                        <button id="startDemo">开始演示</button>
+                        <button id="pauseDemo">暂停/继续</button>
+                    </div>
+                    <div class="speed-control">
+                        <span class="speed-label">演示速度:</span>
+                        <input type="range" min="1" max="10" value="3" id="speedSlider">
+                    </div>
+                    <div class="demo-display">
+                        <div class="demo-visual">
+                            <div class="charge-indicator">
+                                <div class="positive-plate plate">
+                                    <div style="position: absolute; top: -25px; width: 100%; text-align: center; font-weight: bold; color: #c0392b;">+ + +</div>
+                                </div>
+                                <div class="direction-indicator">↑↓</div>
+                                <div class="negative-plate plate">
+                                    <div style="position: absolute; bottom: -25px; width: 100%; text-align: center; font-weight: bold; color: #2980b9;">- - -</div>
+                                </div>
+                            </div>
+                            <div class="charge-status">
+                                <div id="demoStatus">准备状态</div>
+                                <div>电荷: <span id="demoCharge">0 C</span></div>
+                            </div>
+                            <div class="equation-display">
+                                i = dq/dt = <span id="currentCalc">0 A</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <div class="panel-section">
+                    <div class="panel-title">
+                        <div class="icon">⚙️</div>
+                        <h2>参数控制</h2>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label>电容值 C (法拉F)</label>
+                        <input type="range" min="1" max="10" value="3" step="0.1" class="slider" id="capacitanceSlider">
+                        <div class="value-display">
+                            <span>1F</span>
+                            <span>当前: <span id="cValue">3.0F</span></span>
+                            <span>10F</span>
+                        </div>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label>电压 V (伏特V)</label>
+                        <input type="range" min="0" max="10" value="5" step="0.5" class="slider" id="voltageSlider">
+                        <div class="value-display">
+                            <span>0V</span>
+                            <span>当前: <span id="vValue">5.0V</span></span>
+                            <span>10V</span>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button id="chargeBtn">开始充电</button>
+                        <button id="dischargeBtn">开始放电</button>
+                    </div>
+                </div>
+                
+                <div class="panel-section">
+                    <div class="panel-title">
+                        <div class="icon">🔄</div>
+                        <h2>参考方向设置</h2>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button id="toggleRefPolarity">切换参考极性</button>
+                        <button id="toggleRefCurrent">切换电流参考方向</button>
+                    </div>
+                    
+                    <div class="formula-container">
+                        <h3>电容器电流公式</h3>
+                        <div id="formulaBox">
+                            <math xmlns="http://www.w3.org/1998/Math/MathML">
+                                <mi>i</mi>
+                                <mo>=</mo>
+                                <mi>C</mi>
+                                <mfrac>
+                                    <mrow>
+                                        <mi>d</mi>
+                                        <msub>
+                                            <mi>u</mi>
+                                            <mi>C</mi>
+                                        </msub>
+                                    </mrow>
+                                    <mrow>
+                                        <mi>d</mi>
+                                        <mi>t</mi>
+                                    </mrow>
+                                </mfrac>
+                            </math>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel-section tabs-container">
+                    <div class="tab-nav">
+                        <div class="tab-btn active" data-tab="knowledge">核心知识</div>
+                        <div class="tab-btn" data-tab="chart">数据图表</div>
+                        <div class="tab-btn" data-tab="params">实时参数</div>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <div class="tab active" id="knowledgeTab">
+                            <div class="knowledge-card">
+                                <div class="knowledge-title">极板电荷的双向标量特性</div>
+                                <p>电容器极板电荷只有两种相反的实际极性：</p>
+                                <ul>
+                                    <li>上极板正电/下极板负电</li>
+                                    <li>上极板负电/下极板正电</li>
+                                </ul>
+                                <p>引入参考极性统一表示大小和实际极性：</p>
+                                <p>实际极性与参考极性相同时 q > 0，相反时 q < 0</p>
+                            </div>
+                            
+                            <div class="knowledge-card">
+                                <div class="knowledge-title">电荷与电压的关系</div>
+                                <p>当电压参考极性与电荷参考极性一致时：</p>
+                                <p>$$ q = C \cdot u_C $$</p>
+                                <p>q - 电荷(库仑C), C - 电容(法拉F), u_C - 电压(伏特V)</p>
+                            </div>
+                            
+                            <div class="knowledge-card">
+                                <div class="knowledge-title">电流与电荷变化率</div>
+                                <p>当电流参考方向指向电荷参考极性的正极时：</p>
+                                <p>$$ i = \frac{dq}{dt} $$</p>
+                                <p>i - 电流(A), q - 电荷(C), t - 时间(s)</p>
+                            </div>
+                            
+                            <div class="knowledge-card">
+                                <div class="knowledge-title">电容的特性方程</div>
+                                <p>综合两个关系式可得：</p>
+                                <p>$$ i = C \frac{du_C}{dt} $$</p>
+                                <p>当参考方向改变时公式需要加上负号</p>
+                            </div>
+                        </div>
+                        
+                        <div class="tab" id="chartTab">
+                            <div class="chart-container">
+                                <canvas id="dataChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="tab" id="paramsTab">
+                            <div class="param-display">
+                                <div class="param-card">
+                                    <div>存储电荷</div>
+                                    <div class="param-value" id="chargeValue">15.0C</div>
+                                    <div>q = C × V</div>
+                                </div>
+                                <div class="param-card">
+                                    <div>电场能量</div>
+                                    <div class="param-value" id="energyValue">37.5J</div>
+                                    <div>E = ½CV²</div>
+                                </div>
+                                <div class="param-card">
+                                    <div>电流</div>
+                                    <div class="param-value" id="currentValue">0A</div>
+                                    <div>i = dq/dt</div>
+                                </div>
+                                <div class="param-card">
+                                    <div>电压变化率</div>
+                                    <div class="param-value" id="dvValue">0V/s</div>
+                                    <div>du/dt</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="resetBtn">重置实验</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            电容交互教学平台 © 2023 | 深入理解电容物理原理与数学模型
+        </div>
+    </div>
+
+    <script>
+        // 初始化Three.js场景
+        function initSimulation() {
+            // 修复点：在函数顶部声明所有变量
+            const container = document.getElementById('simulation');
+            const capacitanceSlider = document.getElementById('capacitanceSlider');
+            const voltageSlider = document.getElementById('voltageSlider');
+            const speedSlider = document.getElementById('speedSlider');
+            const cValue = document.getElementById('cValue');
+            const vValue = document.getElementById('vValue');
+            
+            // 创建场景
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf8f9fa);
+            
+            // 创建相机
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.z = 5;
+            
+            // 创建渲染器
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            
+            // 添加光源
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+            
+            // 创建电容器模型
+            const capacitorGroup = new THREE.Group();
+            scene.add(capacitorGroup);
+            
+            // 电容极板
+            const plateGeometry = new THREE.BoxGeometry(2, 0.2, 2);
+            const plateMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x3498db,
+                emissive: 0x1a5276,
+                shininess: 100
+            });
+            
+            const topPlate = new THREE.Mesh(plateGeometry, plateMaterial);
+            topPlate.position.y = 1;
+            capacitorGroup.add(topPlate);
+            
+            const bottomPlate = new THREE.Mesh(plateGeometry, plateMaterial);
+            bottomPlate.position.y = -1;
+            capacitorGroup.add(bottomPlate);
+            
+            // 添加电极
+            const createElectrode = (x) => {
+                const electrodeGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1.5);
+                const electrodeMaterial = new THREE.MeshPhongMaterial({ color: 0x2980b9 });
+                
+                const electrode = new THREE.Mesh(electrodeGeometry, electrodeMaterial);
+                electrode.position.x = x;
+                electrode.position.y = 0;
+                capacitorGroup.add(electrode);
+            };
+            
+            createElectrode(-1.5);
+            createElectrode(1.5);
+            
+            // 电场线
+            const fieldLines = new THREE.Group();
+            scene.add(fieldLines);
+            
+            const createFieldLine = (x, z) => {
+                const points = [];
+                for (let y = -0.8; y <= 0.8; y += 0.1) {
+                    points.push(new THREE.Vector3(x, y, z));
+                }
+                
+                const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+                const lineMaterial = new THREE.LineBasicMaterial({ 
+                    color: 0x207cca,
+                    opacity: 0.7,
+                    transparent: true
+                });
+                
+                return new THREE.Line(lineGeometry, lineMaterial);
+            };
+            
+            // 添加电荷
+            const particles = new THREE.Group();
+            scene.add(particles);
+            
+            const particleGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+            const positiveMaterial = new THREE.MeshBasicMaterial({ color: 0xe74c3c });
+            const negativeMaterial = new THREE.MeshBasicMaterial({ color: 0x3498db });
+            
+            // 创建一些初始粒子
+            const generateParticles = () => {
+                particles.children.forEach(p => particles.remove(p));
+                
+                const count = Math.floor(capacitanceSlider.value * 5);
+                
+                for (let i = 0; i < count; i++) {
+                    const particle = new THREE.Mesh(particleGeometry, positiveMaterial);
+                    particle.position.set(
+                        Math.random() * 1.8 - 0.9,
+                        0.8 + Math.random() * 0.4,
+                        Math.random() * 1.8 - 0.9
+                    );
+                    particle.userData = {
+                        isPositive: true,
+                        speed: 0.01 + Math.random() * 0.01
+                    };
+                    particles.add(particle);
+                    
+                    const negativeParticle = new THREE.Mesh(particleGeometry, negativeMaterial);
+                    negativeParticle.position.set(
+                        Math.random() * 1.8 - 0.9,
+                        -0.8 - Math.random() * 0.4,
+                        Math.random() * 1.8 - 0.9
+                    );
+                    negativeParticle.userData = {
+                        isPositive: false,
+                        speed: 0.01 + Math.random() * 0.01
+                    };
+                    particles.add(negativeParticle);
+                }
+            };
+            
+            generateParticles();
+            
+            // 动画循环
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                // 简单旋转以展示3D效果
+                capacitorGroup.rotation.y += 0.005;
+                
+                // 更新粒子位置 (用于充放电动画)
+                particles.children.forEach(particle => {
+                    if (particle.userData.isPositive) {
+                        particle.position.y += particle.userData.speed;
+                    } else {
+                        particle.position.y -= particle.userData.speed;
+                    }
+                    
+                    // 当粒子移动到极板或消失点时移除
+                    if (Math.abs(particle.position.y) > 2) {
+                        particles.remove(particle);
+                    }
+                });
+                
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // 窗口大小调整
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+            
+            // 滑块控制
+            capacitanceSlider.addEventListener('input', function() {
+                cValue.textContent = this.value + 'F';
+                generateParticles();
+                updateCharge();
+            });
+            
+            voltageSlider.addEventListener('input', function() {
+                vValue.textContent = this.value + 'V';
+                updateCharge();
+            });
+            
+            // 按钮事件处理
+            const chargeBtn = document.getElementById('chargeBtn');
+            const dischargeBtn = document.getElementById('dischargeBtn');
+            const toggleRefPolarity = document.getElementById('toggleRefPolarity');
+            const toggleRefCurrent = document.getElementById('toggleRefCurrent');
+            const resetBtn = document.getElementById('resetBtn');
+            const startDemo = document.getElementById('startDemo');
+            const pauseDemo = document.getElementById('pauseDemo');
+            
+            // 图表初始化
+            const ctx = document.getElementById('dataChart').getContext('2d');
+            const dataChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: '电压 (V)',
+                            borderColor: '#207cca',
+                            backgroundColor: 'rgba(32, 124, 202, 0.1)',
+                            data: [],
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '电流 (A)',
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            data: [],
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '电压 (V)'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: '电流 (A)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 公式显示和参考方向
+            let refPolarity = true;
+            let refCurrent = true;
+            
+            toggleRefPolarity.addEventListener('click', () => {
+                refPolarity = !refPolarity;
+                updateFormula();
+            });
+            
+            toggleRefCurrent.addEventListener('click', () => {
+                refCurrent = !refCurrent;
+                updateFormula();
+            });
+            
+            function updateFormula() {
+                if (refPolarity === refCurrent) {
+                    document.getElementById('formulaBox').innerHTML = `
+                        <math xmlns="http://www.w3.org/1998/Math/MathML">
+                            <mi>i</mi>
+                            <mo>=</mo>
+                            <mi>C</mi>
+                            <mfrac>
+                                <mrow>
+                                    <mi>d</mi>
+                                    <msub>
+                                        <mi>u</mi>
+                                        <mi>C</mi>
+                                    </msub>
+                                </mrow>
+                                <mrow>
+                                    <mi>d</mi>
+                                    <mi>t</mi>
+                                </mrow>
+                            </mfrac>
+                        </math>
+                    `;
+                } else {
+                    document.getElementById('formulaBox').innerHTML = `
+                        <math xmlns="http://www.w3.org/1998/Math/MathML">
+                            <mi>i</mi>
+                            <mo>=</mo>
+                            <mo>-</mo>
+                            <mi>C</mi>
+                            <mfrac>
+                                <mrow>
+                                    <mi>d</mi>
+                                    <msub>
+                                        <mi>u</mi>
+                                        <mi>C</mi>
+                                    </msub>
+                                </mrow>
+                                <mrow>
+                                    <mi>d</mi>
+                                    <mi>t</mi>
+                                </mrow>
+                            </mfrac>
+                        </math>
+                    `;
+                }
+                
+                MathJax.typeset();
+            }
+            
+            // 更新电荷和能量
+            function updateCharge() {
+                const capacitance = parseFloat(capacitanceSlider.value);
+                const voltage = parseFloat(voltageSlider.value);
+                const charge = (capacitance * voltage).toFixed(1);
+                const energy = (0.5 * capacitance * voltage * voltage).toFixed(1);
+                
+                document.getElementById('chargeValue').textContent = charge + 'C';
+                document.getElementById('energyValue').textContent = energy + 'J';
+            }
+            
+            updateCharge();
+            
+            // 切换标签页
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // 移除所有active类
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                    
+                    // 添加active类
+                    btn.classList.add('active');
+                    
+                    const tabId = btn.getAttribute('data-tab');
+                    document.getElementById(tabId + 'Tab').classList.add('active');
+                });
+            });
+            
+            // 充放电动画
+            let chargeAnimation = null;
+            let isPaused = false;
+            let demoTime = 0;
+            let demoCharge = 0;
+            let targetCharge = 0;
+            let speedFactor = 0.3; // 默认速度因子
+            
+            // 速度滑块控制
+            speedSlider.addEventListener('input', function() {
+                // 速度范围1-10，转换为0.2-1.0的速度因子
+                speedFactor = 0.2 + (this.value / 10) * 0.8;
+            });
+            
+            chargeBtn.addEventListener('click', () => {
+                startCharge(true);
+            });
+            
+            dischargeBtn.addEventListener('click', () => {
+                startCharge(false);
+            });
+            
+            startDemo.addEventListener('click', () => {
+                document.getElementById('demoStatus').textContent = '充电中';
+                startChargeDemo(true);
+            });
+            
+            pauseDemo.addEventListener('click', () => {
+                isPaused = !isPaused;
+                document.getElementById('demoStatus').textContent = isPaused ? '已暂停' : '充电中';
+                
+                if (!isPaused && chargeAnimation) {
+                    animateDemo();
+                }
+            });
+            
+            function startCharge(isCharging) {
+                // 添加粒子表示充电/放电
+                const count = Math.floor(capacitanceSlider.value * 5);
+                for (let i = 0; i < count; i++) {
+                    const particle = new THREE.Mesh(particleGeometry, positiveMaterial);
+                    
+                    if (isCharging) {
+                        particle.position.set(
+                            1.8,
+                            -1.2,
+                            Math.random() * 1.6 - 0.8
+                        );
+                        particle.userData = {
+                            isPositive: true,
+                            speed: 0.01 + Math.random() * 0.01
+                        };
+                    } else {
+                        particle.position.set(
+                            Math.random() * 1.8 - 0.9,
+                            0.8,
+                            Math.random() * 1.8 - 0.9
+                        );
+                        particle.userData = {
+                            isPositive: true,
+                            speed: 0.01 + Math.random() * 0.01
+                        };
+                    }
+                    
+                    particles.add(particle);
+                    
+                    const negativeParticle = new THREE.Mesh(particleGeometry, negativeMaterial);
+                    
+                    if (isCharging) {
+                        negativeParticle.position.set(
+                            1.8,
+                            1.2,
+                            Math.random() * 1.6 - 0.8
+                        );
+                        negativeParticle.userData = {
+                            isPositive: false,
+                            speed: 0.01 + Math.random() * 0.01
+                        };
+                    } else {
+                        negativeParticle.position.set(
+                            Math.random() * 1.8 - 0.9,
+                            -0.8,
+                            Math.random() * 1.8 - 0.9
+                        );
+                        negativeParticle.userData = {
+                            isPositive: false,
+                            speed: 0.01 + Math.random() * 0.01
+                        };
+                    }
+                    
+                    particles.add(negativeParticle);
+                }
+                
+                // 图表动画
+                animateChart(isCharging);
+            }
+            
+            function startChargeDemo(isCharging) {
+                demoTime = 0;
+                demoCharge = 0;
+                targetCharge = capacitanceSlider.value * voltageSlider.value;
+                
+                if (chargeAnimation) {
+                    cancelAnimationFrame(chargeAnimation);
+                }
+                
+                animateDemo();
+            }
+            
+            function animateDemo() {
+                if (isPaused) return;
+                
+                // 使用速度因子控制演示速度
+                demoTime += 0.1 * speedFactor;
+                
+                if (demoTime < 5) {
+                    // 充电阶段
+                    demoCharge = targetCharge * (1 - Math.exp(-0.3 * demoTime)); // 降低充电速度
+                    
+                    // 计算电流：i = dq/dt = C * du/dt
+                    const current = capacitanceSlider.value * (demoCharge / capacitanceSlider.value - 
+                                 (demoCharge - 0.1) / capacitanceSlider.value) / 0.1;
+                    
+                    document.getElementById('demoCharge').textContent = demoCharge.toFixed(2) + ' C';
+                    document.getElementById('currentCalc').textContent = current.toFixed(2) + ' A';
+                    
+                    // 更新方向箭头颜色
+                    document.querySelector('.direction-indicator').style.color = '#27ae60';
+                    
+                    chargeAnimation = requestAnimationFrame(animateDemo);
+                } else if (demoTime < 10) {
+                    // 保持阶段
+                    document.getElementById('demoStatus').textContent = '稳定状态';
+                    document.getElementById('currentCalc').textContent = '0.00 A';
+                    document.querySelector('.direction-indicator').style.color = '#7f8c8d';
+                    
+                    chargeAnimation = requestAnimationFrame(animateDemo);
+                } else if (demoTime < 15) {
+                    // 放电阶段
+                    document.getElementById('demoStatus').textContent = '放电中';
+                    demoCharge = targetCharge * Math.exp(-0.3 * (demoTime - 10)); // 降低放电速度
+                    
+                    // 计算电流（负值）
+                    const current = -capacitanceSlider.value * (demoCharge / capacitanceSlider.value) / 0.1;
+                    
+                    document.getElementById('demoCharge').textContent = demoCharge.toFixed(2) + ' C';
+                    document.getElementById('currentCalc').textContent = current.toFixed(2) + ' A';
+                    document.querySelector('.direction-indicator').style.color = '#e74c3c';
+                    
+                    chargeAnimation = requestAnimationFrame(animateDemo);
+                } else {
+                    // 结束
+                    document.getElementById('demoStatus').textContent = '已完成';
+                }
+            }
+            
+            // 图表动画
+            function animateChart(isCharging) {
+                const maxPoints = 20;
+                const labels = [];
+                const voltageData = [];
+                const currentData = [];
+                
+                const startVoltage = isCharging ? 0 : parseFloat(voltageSlider.value);
+                const endVoltage = isCharging ? parseFloat(voltageSlider.value) : 0;
+                const capacitance = parseFloat(capacitanceSlider.value);
+                
+                for (let i = 0; i < maxPoints; i++) {
+                    labels.push(`${i*0.5}s`);
+                    const t = i / maxPoints;
+                    const voltage = isCharging ? endVoltage * (1 - Math.exp(-2 * t)) : endVoltage * Math.exp(-2 * t); // 降低速度
+                    const current = capacitance * (voltage - (i>0 ? voltageData[i-1] : startVoltage)) / 0.05 * (isCharging ? 1 : -1);
+                    
+                    voltageData.push(voltage);
+                    currentData.push(current);
+                }
+                
+                // 实时动画效果
+                const animData = {
+                    labels: [],
+                    voltages: [],
+                    currents: []
+                };
+                
+                let pointIndex = 0;
+                const animInterval = setInterval(() => {
+                    if (pointIndex >= maxPoints) {
+                        clearInterval(animInterval);
+                        return;
+                    }
+                    
+                    animData.labels.push(labels[pointIndex]);
+                    animData.voltages.push(voltageData[pointIndex]);
+                    animData.currents.push(currentData[pointIndex]);
+                    
+                    dataChart.data.labels = animData.labels;
+                    dataChart.data.datasets[0].data = animData.voltages;
+                    dataChart.data.datasets[1].data = animData.currents;
+                    dataChart.update();
+                    
+                    pointIndex++;
+                }, 300); // 增加间隔时间
+            }
+            
+            // 重置按钮
+            resetBtn.addEventListener('click', () => {
+                capacitanceSlider.value = 3;
+                voltageSlider.value = 5;
+                speedSlider.value = 3;
+                refPolarity = true;
+                refCurrent = true;
+                
+                cValue.textContent = '3.0F';
+                vValue.textContent = '5.0V';
+                
+                generateParticles();
+                updateCharge();
+                updateFormula();
+                
+                // 重置图表
+                dataChart.data.labels = [];
+                dataChart.data.datasets[0].data = [];
+                dataChart.data.datasets[1].data = [];
+                dataChart.update();
+                
+                // 重置演示
+                if (chargeAnimation) {
+                    cancelAnimationFrame(chargeAnimation);
+                    chargeAnimation = null;
+                }
+                document.getElementById('demoStatus').textContent = '准备状态';
+                document.getElementById('demoCharge').textContent = '0 C';
+                document.getElementById('currentCalc').textContent = '0.00 A';
+                document.querySelector('.direction-indicator').style.color = '#27ae60';
+                isPaused = false;
+            });
+            
+            // 初始化
+            updateFormula();
+        }
+        
+        // 初始化场景
+        window.addEventListener('DOMContentLoaded', () => {
+            initSimulation();
+        });
+    </script>
+</body>
+</html>
