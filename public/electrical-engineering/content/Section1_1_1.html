@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>电路参考方向教学平台</title>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/jsm/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r123/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r123/examples/js/controls/OrbitControls.js"></script>
     <style>
         * {
             margin: 0;
@@ -32,8 +32,9 @@
             flex: 1;
             position: relative;
             width: 70%;
+            height: 100%;
             z-index: 1;
-            min-height: 600px;
+            background: #f8f9fa;
         }
 
         #uiPanel {
@@ -213,6 +214,7 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             border: 1px solid rgba(0, 0, 0, 0.1);
             border-left: 4px solid #3498db;
+            display: none;
         }
 
         #hoverInfo {
@@ -229,6 +231,7 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             border: 1px solid rgba(0, 0, 0, 0.1);
             border-left: 4px solid #3498db;
+            display: none;
         }
 
         #hoverInfo h3 {
@@ -286,11 +289,38 @@
                 height: 40vh;
             }
         }
+        
+        /* 调试信息样式 */
+        #debugInfo {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 100;
+        }
+        
+        /* 加载动画 */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #3498db;
+            font-size: 18px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
     <div id="container">
-        <div id="threeContainer"></div>
+        <div id="threeContainer">
+            <!-- 3D场景将在这里渲染 -->
+            <div class="loading" id="loadingText">正在初始化3D场景...</div>
+        </div>
 
         <div id="uiPanel">
             <div class="header">
@@ -331,6 +361,10 @@
 
                     <button onclick="toggleCurrentAnimation()" class="control-btn">
                         <i>✨</i> <span id="currentBtnText">显示</span>电流动画
+                    </button>
+                    
+                    <button onclick="resetView()" class="control-btn">
+                        <i>🔄</i> 重置视图
                     </button>
                 </div>
 
@@ -383,12 +417,12 @@
             </div>
         </div>
 
-        <div id="infoOverlay" style="display: none;">
+        <div id="infoOverlay">
             <h3 id="componentTitle">组件信息</h3>
             <p id="componentInfo">点击电路组件查看详细信息</p>
         </div>
 
-        <div id="hoverInfo" style="display: none; left: 0px; top: 0px;">
+        <div id="hoverInfo">
             <h3 id="hoverComponentTitle">元器件信息</h3>
             <p id="hoverComponentInfo">元器件说明信息</p>
         </div>
@@ -396,95 +430,98 @@
 
     <script>
         // 全局变量
-        let scene, camera, renderer, controls, circuitComponents, currentParticles;
+        let scene, camera, renderer, controls, circuitComponents, currentParticles, resistorParticles;
         let currentDirection = 1; // 1: 从左到右, -1: 从右到左
         let animationSpeed = 1;
         let currentVisible = false;
         let currentPolarityState = 1; // 1: 左+右-, 2: 左-右+, 3: 左+右-, 4: 左-右+
         let currentConvention = 'passive'; // 'passive' 或 'active'
-
-        // UI 状态
-        let showInfoOverlay = false;
-        let componentTitle = '组件信息';
-        let componentInfo = '点击电路组件查看详细信息';
-        let showHoverInfo = false;
-        let hoverComponentTitle = '元器件信息';
-        let hoverComponentInfo = '元器件说明信息';
-        let hoverInfoStyle = {
-            display: 'none',
-            left: '0px',
-            top: '0px'
-        };
+        let time = 0;
 
         // 交互相关
         let hoverTimeout = null;
         let highlightedObject = null;
-        let raycaster = null;
-        let mouse = null;
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+
+        // 动画相关
+        let animationFrameId = null;
 
         // 初始化Three.js场景
         function initThreeJS() {
-            // 初始化Three.js场景
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xf8f9fa);
+            try {
+                console.log("开始初始化Three.js...");
+                
+                // 隐藏加载文本
+                document.getElementById('loadingText').style.display = 'none';
+                
+                // 初始化Three.js场景
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0xf8f9fa);
 
-            const container = document.getElementById('threeContainer');
-            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({
-                antialias: true,
-                alpha: true,
-                preserveDrawingBuffer: true
-            });
+                const container = document.getElementById('threeContainer');
+                
+                camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+                renderer = new THREE.WebGLRenderer({
+                    antialias: true,
+                    alpha: true
+                });
 
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            container.appendChild(renderer.domElement);
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                container.appendChild(renderer.domElement);
+                
+                console.log("渲染器已创建并添加到DOM");
 
-            // 添加光源
-            const ambientLight = new THREE.AmbientLight(0x404060, 1.0);
-            scene.add(ambientLight);
+                // 添加光源
+                const ambientLight = new THREE.AmbientLight(0x404060, 1.0);
+                scene.add(ambientLight);
 
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-            directionalLight.position.set(10, 20, 15);
-            directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
-            scene.add(directionalLight);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+                directionalLight.position.set(10, 20, 15);
+                directionalLight.castShadow = true;
+                scene.add(directionalLight);
 
-            const spotLight = new THREE.SpotLight(0x3498db, 1.8);
-            spotLight.position.set(-5, 15, 0);
-            spotLight.angle = Math.PI / 4;
-            spotLight.penumbra = 0.1;
-            spotLight.castShadow = true;
-            scene.add(spotLight);
+                // 初始化交互控制器
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                camera.position.set(0, 8, 20);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.screenSpacePanning = false;
+                controls.minDistance = 10;
+                controls.maxDistance = 40;
+                controls.update();
 
-            // 初始化交互控制器
-            controls = new OrbitControls(camera, renderer.domElement);
-            camera.position.set(0, 8, 20);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.screenSpacePanning = false;
-            controls.minDistance = 10;
-            controls.maxDistance = 40;
-            controls.update();
+                // 电路组件容器
+                circuitComponents = new THREE.Group();
+                scene.add(circuitComponents);
+                circuitComponents.position.y = 1;
 
-            // 电路组件容器
-            circuitComponents = new THREE.Group();
-            scene.add(circuitComponents);
-            circuitComponents.position.y = 1;
+                // 创建基础电路
+                createCircuit();
 
-            // 创建基础电路
-            createCircuit();
+                // 设置射线检测
+                setupRaycaster();
 
-            // 设置射线检测
-            setupRaycaster();
+                console.log("Three.js初始化完成");
 
-            // 开始动画循环
-            animate();
+                // 开始动画循环
+                animate();
+            } catch (error) {
+                console.error("Three.js初始化错误:", error);
+                alert("Three.js初始化失败: " + error.message);
+            }
         }
 
         function createCircuit() {
+            console.log("创建电路...");
+            
+            // 清空现有组件
+            while(circuitComponents.children.length > 0) {
+                circuitComponents.remove(circuitComponents.children[0]);
+            }
+            
             // 创建电阻（黄色圆柱体）
             const resistorGeometry = new THREE.CylinderGeometry(1.2, 1.2, 1, 32);
             const resistorMaterial = new THREE.MeshStandardMaterial({
@@ -496,7 +533,7 @@
             resistor.position.set(0, 0, 0);
             resistor.userData = {
                 type: 'resistor',
-                info: '电阻值：4.7Ω\n功率：1/4W'
+                info: '电阻值：4.7Ω\n功率：1/4W\n电流通过时会产生热量'
             };
             resistor.castShadow = true;
             circuitComponents.add(resistor);
@@ -513,41 +550,75 @@
             wire.castShadow = true;
             wire.userData = {
                 type: 'wire',
-                info: '导线：贯穿电阻，传导电流'
+                info: '导线：贯穿电阻，传导电流\n材料：铜'
             };
             circuitComponents.add(wire);
 
+            // 创建连接点（导线两端）
+            createConnectionPoints();
+
             // 创建极性标记
             createPolarityMarkers();
+            
+            console.log("电路创建完成");
+        }
+
+        function createConnectionPoints() {
+            // 左侧连接点
+            const leftConnectorGeometry = new THREE.SphereGeometry(0.4, 16, 16);
+            const connectorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x3498db,
+                roughness: 0.1,
+                metalness: 0.9
+            });
+            
+            const leftConnector = new THREE.Mesh(leftConnectorGeometry, connectorMaterial);
+            leftConnector.position.set(-5, 0, 0);
+            leftConnector.castShadow = true;
+            leftConnector.userData = {
+                type: 'connector',
+                info: '左侧连接点：电流入口/出口'
+            };
+            circuitComponents.add(leftConnector);
+
+            // 右侧连接点
+            const rightConnector = new THREE.Mesh(leftConnectorGeometry, connectorMaterial);
+            rightConnector.position.set(5, 0, 0);
+            rightConnector.castShadow = true;
+            rightConnector.userData = {
+                type: 'connector',
+                info: '右侧连接点：电流出口/入口'
+            };
+            circuitComponents.add(rightConnector);
         }
 
         function createPolarityMarkers() {
             const polarityGroup = new THREE.Group();
+            polarityGroup.name = 'polarityMarkers';
 
-            // 左侧标记（+） - 增大尺寸
+            // 左侧标记（+）
             const leftPlus = createTextLabel('+', 0xe74c3c);
             leftPlus.position.set(-4, 0, 1.5);
             polarityGroup.add(leftPlus);
 
-            // 右侧标记（-） - 增大尺寸
+            // 右侧标记（-）
             const rightMinus = createTextLabel('-', 0x2ecc71);
             rightMinus.position.set(4, 0, 1.5);
             polarityGroup.add(rightMinus);
 
             circuitComponents.add(polarityGroup);
-            polarityGroup.name = 'polarityMarkers';
         }
 
         function createTextLabel(text, color) {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
-            canvas.width = 256; // 增大尺寸
-            canvas.height = 256; // 增大尺寸
+            canvas.width = 256;
+            canvas.height = 256;
 
             context.fillStyle = 'rgba(0,0,0,0)';
             context.fillRect(0, 0, canvas.width, canvas.height);
 
-            context.font = 'bold 96px Arial'; // 增大字体
+            context.font = 'bold 96px Arial';
             context.fillStyle = color;
             context.textAlign = 'center';
             context.textBaseline = 'middle';
@@ -560,7 +631,7 @@
                 depthTest: false
             });
             const sprite = new THREE.Sprite(material);
-            sprite.scale.set(1.8, 1.8, 1); // 增大尺寸
+            sprite.scale.set(1.8, 1.8, 1);
 
             sprite.userData = { type: 'textLabel' };
             return sprite;
@@ -569,29 +640,26 @@
         function generateCurrentParticles() {
             if (currentParticles) {
                 scene.remove(currentParticles);
+                currentParticles = null;
             }
 
-            // 大幅增加粒子数量
-            const particleCount = 2000;
+            // 创建导线粒子
+            const particleCount = 500;
             const particles = new THREE.BufferGeometry();
             const posArray = new Float32Array(particleCount * 3);
             const colorArray = new Float32Array(particleCount * 3);
 
-            // 使用更亮的蓝色粒子
             const particleColor = new THREE.Color(0x0066ff);
 
-            // 创建多层粒子流（5层）
+            // 导线粒子 - 多层分布
             for (let i = 0; i < particleCount * 3; i += 3) {
-                // 随机选择粒子层（-2, -1, 0, 1, 2）
-                const layer = Math.floor(Math.random() * 5) - 2;
-                const layerHeight = layer * 0.5;
+                const layer = Math.floor(Math.random() * 3) - 1;
+                const layerHeight = layer * 0.3;
 
-                // 在导线上生成粒子
                 posArray[i] = -8 + Math.random() * 16;
                 posArray[i+1] = layerHeight;
                 posArray[i+2] = 0;
 
-                // 设置粒子颜色
                 colorArray[i] = particleColor.r;
                 colorArray[i+1] = particleColor.g;
                 colorArray[i+2] = particleColor.b;
@@ -601,10 +669,10 @@
             particles.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
 
             const particleMaterial = new THREE.PointsMaterial({
-                size: 0.5, // 增大粒子尺寸
+                size: 0.4,
                 vertexColors: true,
                 transparent: true,
-                opacity: 0.95,
+                opacity: 0.9,
                 sizeAttenuation: false
             });
 
@@ -622,6 +690,7 @@
         function hideCurrentParticles() {
             if (currentParticles) {
                 scene.remove(currentParticles);
+                currentParticles = null;
             }
             currentVisible = false;
             document.getElementById('currentBtnText').textContent = '显示';
@@ -640,8 +709,10 @@
         function animateCurrentParticles() {
             if (!currentParticles) return;
 
+            time += 0.01 * animationSpeed;
+
             const positions = currentParticles.geometry.attributes.position.array;
-            const baseSpeed = 0.25 * animationSpeed * currentDirection;
+            const baseSpeed = 0.3 * animationSpeed * currentDirection;
 
             for (let i = 0; i < positions.length; i += 3) {
                 positions[i] += baseSpeed;
@@ -669,16 +740,19 @@
             }
 
             // 更新极性标记
-            const polarityMarkers = circuitComponents.getObjectByName('polarityMarkers').children;
+            const polarityMarkers = circuitComponents.getObjectByName('polarityMarkers');
+            if (!polarityMarkers) return;
+            
+            const markers = polarityMarkers.children;
 
-            polarityMarkers.forEach(marker => {
-                if (marker.material.map) {
+            markers.forEach(marker => {
+                if (marker.material && marker.material.map) {
                     // 翻转极性
                     const canvas = marker.material.map.image;
                     const context = canvas.getContext('2d');
 
                     context.clearRect(0, 0, canvas.width, canvas.height);
-                    context.font = 'bold 96px Arial'; // 增大字体
+                    context.font = 'bold 96px Arial';
                     context.textAlign = 'center';
                     context.textBaseline = 'middle';
 
@@ -727,7 +801,10 @@
             updateStatusText();
 
             // 重置电流动画
-            hideCurrentParticles();
+            if (currentVisible) {
+                hideCurrentParticles();
+                generateCurrentParticles();
+            }
         }
 
         function switchConvention(convention) {
@@ -773,18 +850,27 @@
             animationSpeed = parseFloat(document.getElementById('animationSpeed').value);
         }
 
-        function setupRaycaster() {
-            raycaster = new THREE.Raycaster();
-            mouse = new THREE.Vector2();
+        function resetView() {
+            if (controls) {
+                controls.reset();
+                camera.position.set(0, 8, 20);
+                controls.update();
+            }
+        }
 
-            renderer.domElement.addEventListener('mousemove', onMouseMove);
-            renderer.domElement.addEventListener('click', onMouseClick);
-            window.addEventListener('mouseout', hideHoverInfo);
+        function setupRaycaster() {
+            if (renderer && renderer.domElement) {
+                renderer.domElement.addEventListener('mousemove', onMouseMove);
+                renderer.domElement.addEventListener('click', onMouseClick);
+            }
         }
 
         function onMouseMove(event) {
-            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
-            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+            if (!renderer || !renderer.domElement) return;
+            
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(scene.children, true);
@@ -796,12 +882,6 @@
                 hideHoverInfo();
             }
 
-            // 移除之前的高亮效果
-            if (highlightedObject) {
-                removeHighlight(highlightedObject);
-                highlightedObject = null;
-            }
-
             if (intersects.length > 0) {
                 let obj = intersects[0].object;
 
@@ -811,14 +891,8 @@
                 }
 
                 if (obj && obj.userData && obj.userData.type) {
-                    // 立即添加高亮效果
-                    highlightObject(obj);
-                    highlightedObject = obj;
-
                     // 设置0.5秒后显示悬停信息
                     hoverTimeout = setTimeout(() => {
-                        // 显示悬停信息
-                        showHoverInfo = true;
                         const hoverInfo = document.getElementById('hoverInfo');
                         hoverInfo.style.display = 'block';
                         hoverInfo.style.left = (event.clientX + 15) + 'px';
@@ -831,15 +905,21 @@
                         } else if (obj.userData.type === 'wire') {
                             document.getElementById('hoverComponentTitle').textContent = "导线";
                             document.getElementById('hoverComponentInfo').textContent = obj.userData.info;
+                        } else if (obj.userData.type === 'connector') {
+                            document.getElementById('hoverComponentTitle').textContent = "连接点";
+                            document.getElementById('hoverComponentInfo').textContent = obj.userData.info;
                         }
-                    }, 500); // 0.5秒
+                    }, 500);
                 }
             }
         }
 
         function onMouseClick(event) {
-            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
-            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+            if (!renderer || !renderer.domElement) return;
+            
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(scene.children, true);
@@ -853,15 +933,19 @@
                 }
 
                 if (obj && obj.userData && obj.userData.type) {
-                    highlightComponent(obj);
-
                     // 显示信息
                     if (obj.userData.info) {
-                        showInfoOverlay = true;
                         const infoOverlay = document.getElementById('infoOverlay');
                         infoOverlay.style.display = 'block';
-                        document.getElementById('componentTitle').textContent = 
-                            obj.userData.type === 'resistor' ? "电阻" : "导线";
+                        
+                        if (obj.userData.type === 'resistor') {
+                            document.getElementById('componentTitle').textContent = "电阻";
+                        } else if (obj.userData.type === 'wire') {
+                            document.getElementById('componentTitle').textContent = "导线";
+                        } else if (obj.userData.type === 'connector') {
+                            document.getElementById('componentTitle').textContent = "连接点";
+                        }
+                        
                         document.getElementById('componentInfo').textContent = obj.userData.info;
 
                         // 5秒后隐藏
@@ -878,75 +962,21 @@
                 clearTimeout(hoverTimeout);
                 hoverTimeout = null;
             }
-            showHoverInfo = false;
             document.getElementById('hoverInfo').style.display = 'none';
-
-            // 移除高亮效果
-            if (highlightedObject) {
-                removeHighlight(highlightedObject);
-                highlightedObject = null;
-            }
-        }
-
-        function highlightObject(obj) {
-            // 保存原始材质
-            obj.traverse((child) => {
-                if (child.isMesh) {
-                    if (!child.userData.originalMaterial) {
-                        child.userData.originalMaterial = child.material.clone();
-                    }
-
-                    // 创建高亮材质
-                    const highlightMaterial = new THREE.MeshStandardMaterial({
-                        color: 0xf1c40f,
-                        emissive: 0xf1c40f,
-                        emissiveIntensity: 0.5,
-                        roughness: 0.1,
-                        metalness: 0.9
-                    });
-
-                    // 应用高亮材质
-                    child.material = highlightMaterial;
-                }
-            });
-        }
-
-        function removeHighlight(obj) {
-            obj.traverse((child) => {
-                if (child.isMesh && child.userData.originalMaterial) {
-                    child.material = child.userData.originalMaterial;
-                }
-            });
-        }
-
-        function highlightComponent(obj) {
-            // 保存原始材质
-            const originalMaterial = obj.material;
-
-            // 创建高亮材质
-            const highlightMaterial = new THREE.MeshStandardMaterial({
-                color: 0xf1c40f,
-                emissive: 0xf1c40f,
-                emissiveIntensity: 0.8,
-                roughness: 0.1,
-                metalness: 0.9
-            });
-
-            // 应用高亮材质
-            obj.material = highlightMaterial;
-
-            // 2秒后恢复原始材质
-            setTimeout(() => {
-                obj.material = originalMaterial;
-            }, 2000);
         }
 
         function animate() {
-            requestAnimationFrame(animate);
-            animateCurrentParticles();
+            animationFrameId = requestAnimationFrame(animate);
+            time += 0.01;
+            
+            if (currentParticles) {
+                animateCurrentParticles();
+            }
+            
             if (controls) {
                 controls.update();
             }
+            
             if (renderer && scene && camera) {
                 renderer.render(scene, camera);
             }
@@ -964,16 +994,21 @@
 
                 // 更新渲染器尺寸
                 renderer.setSize(width, height);
-
-                // 设置像素比例，确保在高DPI显示器上清晰
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             }
         }
 
         // 初始化
         window.addEventListener('load', function() {
+            console.log("页面加载完成，开始初始化Three.js");
             initThreeJS();
             window.addEventListener('resize', handleResize);
+        });
+
+        // 清理函数
+        window.addEventListener('beforeunload', function() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
         });
     </script>
 </body>

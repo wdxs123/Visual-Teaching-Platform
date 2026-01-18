@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电阻元件特性方程的相量形式 | 交互式学习平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #4a6bff, #7153ff);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+        
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            color: #4a6bff;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f2f8;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .control-panel {
+            grid-column: 1 / span 2;
+        }
+        
+        .parameter-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .parameter {
+            background-color: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #4a6bff;
+        }
+        
+        .parameter h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        input[type="range"] {
+            flex-grow: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: #e0e4ff;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4a6bff;
+            cursor: pointer;
+        }
+        
+        .value-display {
+            font-weight: bold;
+            color: #4a6bff;
+            font-size: 1.2rem;
+            min-width: 60px;
+        }
+        
+        .visualization-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        .visualization {
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .canvas-container {
+            flex-grow: 1;
+            border: 1px solid #e1e5f1;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #fdfdfe;
+            position: relative;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .formula-container {
+            grid-column: 1 / span 2;
+        }
+        
+        .formula-tabs {
+            display: flex;
+            border-bottom: 1px solid #e1e5f1;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 25px;
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            color: #4a6bff;
+            border-bottom: 3px solid #4a6bff;
+            font-weight: 600;
+        }
+        
+        .formula-content {
+            padding: 20px;
+            background-color: #f8f9ff;
+            border-radius: 8px;
+            min-height: 200px;
+        }
+        
+        .formula-step {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            border-left: 4px solid #4a6bff;
+            display: none;
+        }
+        
+        .formula-step.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        .formula {
+            font-size: 1.3rem;
+            text-align: center;
+            margin: 15px 0;
+            color: #2c3e50;
+            font-family: 'Cambria', 'Times New Roman', serif;
+        }
+        
+        .formula-explanation {
+            font-size: 1rem;
+            color: #555;
+            line-height: 1.7;
+        }
+        
+        .equation-number {
+            color: #4a6bff;
+            font-weight: bold;
+        }
+        
+        .interactive-demo {
+            grid-column: 1 / span 2;
+        }
+        
+        .demo-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .demo-step {
+            background-color: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #e0e4ff;
+        }
+        
+        .demo-step h4 {
+            margin-bottom: 15px;
+            color: #4a6bff;
+        }
+        
+        .step-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #4a6bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background-color: #3a5be0;
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .highlight {
+            background-color: #fffacd;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        .phase-highlight {
+            color: #ff4757;
+            font-weight: bold;
+        }
+        
+        .phasor-highlight {
+            color: #2ed573;
+            font-weight: bold;
+        }
+        
+        .knowledge-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .point {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .point h3 {
+            color: #4a6bff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .point h3 i {
+            margin-right: 10px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e5f1;
+            color: #777;
+            font-size: 0.9rem;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 1100px) {
+            .main-container, .visualization-container, .demo-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-panel, .formula-container, .interactive-demo {
+                grid-column: 1;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header>
+        <h1>电阻元件特性方程的相量形式</h1>
+        <p class="subtitle">交互式学习平台 - 探索电阻在交流电路中的电压电流关系</p>
+    </header>
+    
+    <div class="main-container">
+        <div class="card control-panel">
+            <h2 class="card-title"><i class="fas fa-sliders-h"></i> 参数控制面板</h2>
+            <p>调整以下参数，观察电阻元件电压电流关系的变化：</p>
+            
+            <div class="parameter-controls">
+                <div class="parameter">
+                    <h3>电阻值 R</h3>
+                    <div class="slider-container">
+                        <input type="range" id="r-slider" min="1" max="100" value="10" step="1">
+                        <span class="value-display" id="r-value">10 Ω</span>
+                    </div>
+                    <p>电阻值R越大，在相同电压下电流越小，符合欧姆定律。</p>
+                </div>
+                
+                <div class="parameter">
+                    <h3>电压幅值 U<sub>R</sub></h3>
+                    <div class="slider-container">
+                        <input type="range" id="u-slider" min="10" max="200" value="100" step="1">
+                        <span class="value-display" id="u-value">100 V</span>
+                    </div>
+                    <p>电压幅值决定电压波形的振幅，也影响电流大小。</p>
+                </div>
+                
+                <div class="parameter">
+                    <h3>角频率 ω</h3>
+                    <div class="slider-container">
+                        <input type="range" id="w-slider" min="50" max="1000" value="314" step="1">
+                        <span class="value-display" id="w-value">314 rad/s</span>
+                    </div>
+                    <p>角频率决定波形变化快慢，但不影响电压电流的相位关系。</p>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background-color: #f0f7ff; border-radius: 8px;">
+                <h4>当前计算值：</h4>
+                <div style="display: flex; gap: 30px; margin-top: 10px; flex-wrap: wrap;">
+                    <div>
+                        <p>电流幅值 I<sub>m</sub> = <span id="current-peak" class="highlight">10.0 A</span></p>
+                        <p>电压有效值 U<sub>R</sub> = <span id="voltage-rms" class="highlight">70.7 V</span></p>
+                    </div>
+                    <div>
+                        <p>电流有效值 I = <span id="current-rms" class="highlight">7.07 A</span></p>
+                        <p>瞬时电压 u<sub>R</sub>(t) = <span id="instant-voltage" class="highlight">0.0 V</span></p>
+                    </div>
+                    <div>
+                        <p>瞬时电流 i(t) = <span id="instant-current" class="highlight">0.0 A</span></p>
+                        <p>相位差 φ = <span id="phase-diff" class="phase-highlight">0°</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-title"><i class="fas fa-project-diagram"></i> 电路图</h2>
+            <div class="canvas-container">
+                <canvas id="circuit-canvas"></canvas>
+            </div>
+            <p style="margin-top: 15px; font-size: 0.95rem;">图2-4-1(a) 电阻元件电路图，采用无源惯例标注电压u<sub>R</sub>和电流i的参考方向。</p>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-title"><i class="fas fa-chart-line"></i> 波形图</h2>
+            <div class="canvas-container">
+                <canvas id="waveform-canvas"></canvas>
+            </div>
+            <p style="margin-top: 15px; font-size: 0.95rem;">图2-4-1(b) 电压u<sub>R</sub>和电流i的波形图，两者<span class="phase-highlight">同相位</span>，同时达到零值和最大值。</p>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-title"><i class="fas fa-drafting-compass"></i> 相量图</h2>
+            <div class="canvas-container">
+                <canvas id="phasor-canvas"></canvas>
+            </div>
+            <p style="margin-top: 15px; font-size: 0.95rem;">图2-4-1(c) 电压相量Ū<sub>R</sub>和电流相量İ的相量图，两者方向相同，均在实轴正方向。</p>
+        </div>
+        
+        <div class="card formula-container">
+            <h2 class="card-title"><i class="fas fa-calculator"></i> 方程推导与变换</h2>
+            
+            <div class="formula-tabs">
+                <button class="tab active" onclick="showFormulaTab(1)">时域形式</button>
+                <button class="tab" onclick="showFormulaTab(2)">有效值形式</button>
+                <button class="tab" onclick="showFormulaTab(3)">相量形式</button>
+                <button class="tab" onclick="showFormulaTab(4)">变换法则</button>
+            </div>
+            
+            <div class="formula-content">
+                <div id="formula-step-1" class="formula-step active">
+                    <h4>1. 电阻元件的特性方程（时域形式）</h4>
+                    <div class="formula">u<sub>R</sub> = R i <span class="equation-number">(2-4-1)</span></div>
+                    <p class="formula-explanation">这是电阻元件在时域中的基本特性方程，表示任意时刻t，电阻两端的电压u<sub>R</sub>与流过电阻的电流i成正比，比例系数为电阻R。</p>
+                    
+                    <h4 style="margin-top: 20px;">2. 设电压为正弦量</h4>
+                    <div class="formula">u<sub>R</sub> = √2 U<sub>R</sub> sin ωt <span class="equation-number">(2-4-2)</span></div>
+                    <p class="formula-explanation">假设电阻两端的电压u<sub>R</sub>是角频率为ω的正弦量，其中U<sub>R</sub>是电压有效值，√2 U<sub>R</sub>是电压幅值。</p>
+                </div>
+                
+                <div id="formula-step-2" class="formula-step">
+                    <h4>3. 代入特性方程求电流</h4>
+                    <div class="formula">i = u<sub>R</sub> / R = (√2 U<sub>R</sub> sin ωt) / R = √2 I sin ωt <span class="equation-number">(2-4-3)</span></div>
+                    <p class="formula-explanation">将式(2-4-2)代入式(2-4-1)，得到电流i的表达式。其中I = U<sub>R</sub>/R为电流有效值。</p>
+                    
+                    <h4 style="margin-top: 20px;">4. 电压和电流的有效值关系</h4>
+                    <div class="formula">I = U<sub>R</sub> / R <span class="equation-number">(2-4-4)</span></div>
+                    <div class="formula">U<sub>R</sub> = R I <span class="equation-number">(2-4-5)</span></div>
+                    <p class="formula-explanation">电压有效值U<sub>R</sub>与电流有效值I之间的关系，形式上与直流电路欧姆定律相同。</p>
+                </div>
+                
+                <div id="formula-step-3" class="formula-step">
+                    <h4>5. 电压和电流的相量表示</h4>
+                    <div class="formula">Ū<sub>R</sub> = U<sub>R</sub> e<sup>j0°</sup> <span class="equation-number">(2-4-6)</span></div>
+                    <div class="formula">İ = I e<sup>j0°</sup> = (U<sub>R</sub> / R) e<sup>j0°</sup> <span class="equation-number">(2-4-7)</span></div>
+                    <p class="formula-explanation">将电压和电流表示为相量形式。由于电压和电流同相位，它们的辐角均为0°（以电压为参考）。</p>
+                    
+                    <h4 style="margin-top: 20px;">6. 电阻元件特性方程的相量形式</h4>
+                    <div class="formula">İ = Ū<sub>R</sub> / R <span class="equation-number">(2-4-8)</span></div>
+                    <div class="formula">Ū<sub>R</sub> = R İ <span class="equation-number">(2-4-9)</span></div>
+                    <p class="formula-explanation">这是电阻元件特性方程的相量形式，<span class="phasor-highlight">既包含了电压电流的大小关系，也包含了它们的相位关系</span>（同相位）。</p>
+                </div>
+                
+                <div id="formula-step-4" class="formula-step">
+                    <h4>7. 时域到相量域的变换法则</h4>
+                    <div class="formula">R i ↔ R İ <span class="equation-number">(2-4-10)</span></div>
+                    <p class="formula-explanation">将正弦量化为相量时，一个正弦量与常数R相乘的相量等于该正弦量的相量与同一常数R相乘。</p>
+                    
+                    <h4 style="margin-top: 20px;">核心结论</h4>
+                    <p class="formula-explanation" style="background-color: #f0f7ff; padding: 15px; border-radius: 8px;">
+                        <strong>电阻元件在正弦交流电路中的特性：</strong><br>
+                        1. <span class="phase-highlight">电压u<sub>R</sub>和电流i同相位</span>（相位差为0°）<br>
+                        2. 电压和电流的有效值（或幅值）满足欧姆定律 U<sub>R</sub> = R I<br>
+                        3. 相量形式 Ū<sub>R</sub> = R İ 完整表达了电阻元件的电压电流关系
+                    </p>
+                </div>
+            </div>
+            
+            <div class="step-controls" style="margin-top: 20px;">
+                <button id="prev-step" onclick="prevStep()"><i class="fas fa-arrow-left"></i> 上一步</button>
+                <button id="next-step" onclick="nextStep()">下一步 <i class="fas fa-arrow-right"></i></button>
+                <button onclick="resetFormulas()" style="background-color: #6c757d;"><i class="fas fa-redo"></i> 重新开始</button>
+            </div>
+        </div>
+        
+        <div class="card interactive-demo">
+            <h2 class="card-title"><i class="fas fa-gamepad"></i> 交互式探索</h2>
+            <p>通过以下实验验证电阻在交流电路中的特性：</p>
+            
+            <div class="demo-container">
+                <div class="demo-step">
+                    <h4><i class="fas fa-search"></i> 实验1：验证同相位特性</h4>
+                    <p>调节参数，观察波形图中电压(红色)和电流(蓝色)曲线是否始终保持同步？</p>
+                    <div class="step-controls">
+                        <button onclick="verifyPhase()"><i class="fas fa-check-circle"></i> 验证相位关系</button>
+                        <div id="phase-result" style="margin-left: 15px; padding: 8px; border-radius: 5px; display: inline-block;"></div>
+                    </div>
+                </div>
+                
+                <div class="demo-step">
+                    <h4><i class="fas fa-balance-scale"></i> 实验2：验证欧姆定律</h4>
+                    <p>改变电阻R，观察电流I = U<sub>R</sub>/R是否成立？</p>
+                    <div class="step-controls">
+                        <button onclick="verifyOhmLaw()"><i class="fas fa-check-circle"></i> 验证欧姆定律</button>
+                        <div id="ohm-result" style="margin-left: 15px; padding: 8px; border-radius: 5px; display: inline-block;"></div>
+                    </div>
+                </div>
+                
+                <div class="demo-step">
+                    <h4><i class="fas fa-sync-alt"></i> 实验3：频率的影响</h4>
+                    <p>改变角频率ω，电压和电流的相位关系是否发生变化？</p>
+                    <div class="step-controls">
+                        <button onclick="verifyFrequency()"><i class="fas fa-check-circle"></i> 验证频率影响</button>
+                        <div id="freq-result" style="margin-left: 15px; padding: 8px; border-radius: 5px; display: inline-block;"></div>
+                    </div>
+                </div>
+                
+                <div class="demo-step">
+                    <h4><i class="fas fa-chart-bar"></i> 实验4：相量表示验证</h4>
+                    <p>观察相量图中Ū<sub>R</sub>和İ是否始终在同一直线上？</p>
+                    <div class="step-controls">
+                        <button onclick="verifyPhasor()"><i class="fas fa-check-circle"></i> 验证相量关系</button>
+                        <div id="phasor-result" style="margin-left: 15px; padding: 8px; border-radius: 5px; display: inline-block;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 25px; padding: 20px; background-color: #f0f7ff; border-radius: 10px;">
+                <h4><i class="fas fa-lightbulb"></i> 学习要点总结</h4>
+                <div class="knowledge-points">
+                    <div class="point">
+                        <h3><i class="fas fa-wave-square"></i> 相位特性</h3>
+                        <p>电阻的电压u<sub>R</sub>和电流i<strong>同相位</strong>，同时达到零值和最大值。这是电阻与电感、电容的本质区别。</p>
+                    </div>
+                    <div class="point">
+                        <h3><i class="fas fa-calculator"></i> 数量关系</h3>
+                        <p>电压电流满足<strong>欧姆定律</strong>：U<sub>R</sub> = R I（有效值形式），u<sub>R</sub> = R i（瞬时值形式）。</p>
+                    </div>
+                    <div class="point">
+                        <h3><i class="fas fa-exchange-alt"></i> 相量形式</h3>
+                        <p>相量形式Ū<sub>R</sub> = R İ<strong>既包含大小关系，也包含相位信息</strong>，是分析交流电路的有力工具。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>交互式电阻元件特性学习平台 | 基于《电路理论》教材内容设计 | 2025年</p>
+        <p style="margin-top: 10px; font-size: 0.8rem;">通过调节参数和交互实验，深入理解电阻在正弦交流电路中的电压电流关系</p>
+    </footer>
+
+    <script>
+        // 全局变量
+        let R = 10;           // 电阻值 (Ω)
+        let Um = 100;         // 电压幅值 (V)
+        let w = 314;          // 角频率 (rad/s)
+        let time = 0;         // 当前时间
+        let animationId = null;
+        let isAnimating = true;
+        let currentFormulaStep = 1;
+        
+        // 获取DOM元素
+        const rSlider = document.getElementById('r-slider');
+        const uSlider = document.getElementById('u-slider');
+        const wSlider = document.getElementById('w-slider');
+        const rValue = document.getElementById('r-value');
+        const uValue = document.getElementById('u-value');
+        const wValue = document.getElementById('w-value');
+        const currentPeak = document.getElementById('current-peak');
+        const voltageRms = document.getElementById('voltage-rms');
+        const currentRms = document.getElementById('current-rms');
+        const instantVoltage = document.getElementById('instant-voltage');
+        const instantCurrent = document.getElementById('instant-current');
+        const phaseDiff = document.getElementById('phase-diff');
+        
+        // 获取Canvas元素和上下文
+        const circuitCanvas = document.getElementById('circuit-canvas');
+        const waveformCanvas = document.getElementById('waveform-canvas');
+        const phasorCanvas = document.getElementById('phasor-canvas');
+        const circuitCtx = circuitCanvas.getContext('2d');
+        const waveformCtx = waveformCanvas.getContext('2d');
+        const phasorCtx = phasorCanvas.getContext('2d');
+        
+        // 初始化Canvas大小
+        function initCanvasSize() {
+            const circuitContainer = circuitCanvas.parentElement;
+            circuitCanvas.width = circuitContainer.clientWidth;
+            circuitCanvas.height = circuitContainer.clientHeight;
+            
+            const waveformContainer = waveformCanvas.parentElement;
+            waveformCanvas.width = waveformContainer.clientWidth;
+            waveformCanvas.height = waveformContainer.clientHeight;
+            
+            const phasorContainer = phasorCanvas.parentElement;
+            phasorCanvas.width = phasorContainer.clientWidth;
+            phasorCanvas.height = phasorContainer.clientHeight;
+        }
+        
+        // 计算相关值
+        function calculateValues() {
+            const Im = Um / R;                    // 电流幅值
+            const URms = Um / Math.sqrt(2);       // 电压有效值
+            const IRms = Im / Math.sqrt(2);       // 电流有效值
+            const u_t = Um * Math.sin(w * time);  // 瞬时电压
+            const i_t = Im * Math.sin(w * time);  // 瞬时电流
+            
+            // 更新显示
+            rValue.textContent = `${R} Ω`;
+            uValue.textContent = `${Um} V`;
+            wValue.textContent = `${w} rad/s`;
+            currentPeak.textContent = `${Im.toFixed(2)} A`;
+            voltageRms.textContent = `${URms.toFixed(2)} V`;
+            currentRms.textContent = `${IRms.toFixed(2)} A`;
+            instantVoltage.textContent = `${u_t.toFixed(2)} V`;
+            instantCurrent.textContent = `${i_t.toFixed(2)} A`;
+            phaseDiff.textContent = `0°`;  // 电阻电压电流相位差始终为0
+            
+            // 重新绘制图形
+            drawCircuit();
+            drawWaveform();
+            drawPhasor();
+        }
+        
+        // 绘制电路图
+        function drawCircuit() {
+            const width = circuitCanvas.width;
+            const height = circuitCanvas.height;
+            
+            // 清空画布
+            circuitCtx.clearRect(0, 0, width, height);
+            
+            // 设置绘制参数
+            circuitCtx.lineWidth = 2;
+            circuitCtx.strokeStyle = '#333';
+            circuitCtx.fillStyle = '#333';
+            circuitCtx.font = '16px Arial';
+            
+            // 绘制电源符号
+            circuitCtx.beginPath();
+            circuitCtx.arc(width * 0.3, height * 0.5, 15, 0, Math.PI * 2);
+            circuitCtx.stroke();
+            circuitCtx.fillText('~', width * 0.3 - 5, height * 0.5 + 5);
+            
+            // 绘制导线
+            circuitCtx.beginPath();
+            circuitCtx.moveTo(width * 0.1, height * 0.5);
+            circuitCtx.lineTo(width * 0.25, height * 0.5);
+            circuitCtx.moveTo(width * 0.35, height * 0.5);
+            circuitCtx.lineTo(width * 0.6, height * 0.5);
+            circuitCtx.moveTo(width * 0.8, height * 0.5);
+            circuitCtx.lineTo(width * 0.9, height * 0.5);
+            circuitCtx.stroke();
+            
+            // 绘制电阻符号
+            circuitCtx.beginPath();
+            circuitCtx.rect(width * 0.6, height * 0.4, 40, 20);
+            circuitCtx.stroke();
+            circuitCtx.fillText('R', width * 0.6 + 15, height * 0.4 + 15);
+            
+            // 绘制电压电流标注
+            circuitCtx.fillStyle = '#ff4757';
+            circuitCtx.fillText('u_R', width * 0.65, height * 0.35);
+            circuitCtx.beginPath();
+            circuitCtx.moveTo(width * 0.6, height * 0.4);
+            circuitCtx.lineTo(width * 0.6, height * 0.35);
+            circuitCtx.moveTo(width * 0.6 + 40, height * 0.4);
+            circuitCtx.lineTo(width * 0.6 + 40, height * 0.35);
+            circuitCtx.stroke();
+            
+            circuitCtx.fillStyle = '#3742fa';
+            circuitCtx.fillText('i', width * 0.5, height * 0.6);
+            circuitCtx.beginPath();
+            circuitCtx.moveTo(width * 0.5, height * 0.55);
+            circuitCtx.lineTo(width * 0.5, height * 0.5);
+            circuitCtx.stroke();
+            
+            // 绘制电流方向箭头
+            circuitCtx.fillStyle = '#3742fa';
+            circuitCtx.beginPath();
+            circuitCtx.moveTo(width * 0.55, height * 0.5);
+            circuitCtx.lineTo(width * 0.5, height * 0.45);
+            circuitCtx.lineTo(width * 0.5, height * 0.55);
+            circuitCtx.closePath();
+            circuitCtx.fill();
+            
+            // 绘制图标题
+            circuitCtx.fillStyle = '#333';
+            circuitCtx.font = '14px Arial';
+            circuitCtx.fillText('图2-4-1(a) 电阻元件电路图', width * 0.3, height * 0.9);
+        }
+        
+        // 绘制波形图
+        function drawWaveform() {
+            const width = waveformCanvas.width;
+            const height = waveformCanvas.height;
+            const padding = 40;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+            
+            // 清空画布
+            waveformCtx.clearRect(0, 0, width, height);
+            
+            // 绘制坐标轴
+            waveformCtx.strokeStyle = '#888';
+            waveformCtx.lineWidth = 1;
+            waveformCtx.beginPath();
+            waveformCtx.moveTo(padding, padding);
+            waveformCtx.lineTo(padding, height - padding);
+            waveformCtx.moveTo(padding, height / 2);
+            waveformCtx.lineTo(width - padding, height / 2);
+            waveformCtx.stroke();
+            
+            // 坐标轴标注
+            waveformCtx.fillStyle = '#333';
+            waveformCtx.font = '14px Arial';
+            waveformCtx.fillText('ωt/rad', width - padding + 5, height / 2 + 20);
+            waveformCtx.fillText('u_R/V, i/A', padding - 30, padding - 10);
+            
+            // 刻度
+            waveformCtx.font = '12px Arial';
+            waveformCtx.fillText('0', padding - 10, height / 2 + 5);
+            waveformCtx.fillText('π', padding + graphWidth / 4, height / 2 + 20);
+            waveformCtx.fillText('2π', padding + graphWidth / 2, height / 2 + 20);
+            waveformCtx.fillText('3π', padding + 3 * graphWidth / 4, height / 2 + 20);
+            waveformCtx.fillText('4π', width - padding, height / 2 + 20);
+            
+            // 计算当前值
+            const Im = Um / R;
+            
+            // 绘制电压波形(红色)
+            waveformCtx.strokeStyle = '#ff4757';
+            waveformCtx.lineWidth = 2;
+            waveformCtx.beginPath();
+            
+            for (let x = 0; x <= graphWidth; x++) {
+                const t = (x / graphWidth) * 4 * Math.PI;
+                const y = height / 2 - (Um * Math.sin(t)) * (graphHeight / 2) / Um;
+                
+                if (x === 0) {
+                    waveformCtx.moveTo(padding + x, y);
+                } else {
+                    waveformCtx.lineTo(padding + x, y);
+                }
+            }
+            
+            waveformCtx.stroke();
+            
+            // 绘制电流波形(蓝色)
+            waveformCtx.strokeStyle = '#3742fa';
+            waveformCtx.lineWidth = 2;
+            waveformCtx.beginPath();
+            
+            for (let x = 0; x <= graphWidth; x++) {
+                const t = (x / graphWidth) * 4 * Math.PI;
+                const y = height / 2 - (Im * Math.sin(t)) * (graphHeight / 2) / Um;
+                
+                if (x === 0) {
+                    waveformCtx.moveTo(padding + x, y);
+                } else {
+                    waveformCtx.lineTo(padding + x, y);
+                }
+            }
+            
+            waveformCtx.stroke();
+            
+            // 绘制当前时间指示线
+            const currentX = padding + (time % (4 * Math.PI)) / (4 * Math.PI) * graphWidth;
+            waveformCtx.strokeStyle = '#2ed573';
+            waveformCtx.lineWidth = 1;
+            waveformCtx.setLineDash([5, 5]);
+            waveformCtx.beginPath();
+            waveformCtx.moveTo(currentX, padding);
+            waveformCtx.lineTo(currentX, height - padding);
+            waveformCtx.stroke();
+            waveformCtx.setLineDash([]);
+            
+            // 绘制当前点
+            const u_t = Um * Math.sin(time);
+            const i_t = Im * Math.sin(time);
+            const u_y = height / 2 - u_t * (graphHeight / 2) / Um;
+            const i_y = height / 2 - i_t * (graphHeight / 2) / Um;
+            
+            waveformCtx.fillStyle = '#ff4757';
+            waveformCtx.beginPath();
+            waveformCtx.arc(currentX, u_y, 5, 0, Math.PI * 2);
+            waveformCtx.fill();
+            
+            waveformCtx.fillStyle = '#3742fa';
+            waveformCtx.beginPath();
+            waveformCtx.arc(currentX, i_y, 5, 0, Math.PI * 2);
+            waveformCtx.fill();
+            
+            // 图例
+            waveformCtx.fillStyle = '#ff4757';
+            waveformCtx.fillRect(width - 120, padding + 10, 20, 3);
+            waveformCtx.fillStyle = '#333';
+            waveformCtx.font = '12px Arial';
+            waveformCtx.fillText('电压 u_R', width - 95, padding + 15);
+            
+            waveformCtx.fillStyle = '#3742fa';
+            waveformCtx.fillRect(width - 120, padding + 30, 20, 3);
+            waveformCtx.fillStyle = '#333';
+            waveformCtx.fillText('电流 i', width - 95, padding + 35);
+            
+            // 图标题
+            waveformCtx.fillText('图2-4-1(b) 电压电流波形图（同相位）', width * 0.3, height - 10);
+        }
+        
+        // 绘制相量图
+        function drawPhasor() {
+            const width = phasorCanvas.width;
+            const height = phasorCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const scale = Math.min(width, height) * 0.2; // 缩放因子
+            
+            // 清空画布
+            phasorCtx.clearRect(0, 0, width, height);
+            
+            // 绘制坐标轴
+            phasorCtx.strokeStyle = '#888';
+            phasorCtx.lineWidth = 1;
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(centerX - width * 0.4, centerY);
+            phasorCtx.lineTo(centerX + width * 0.4, centerY);
+            phasorCtx.moveTo(centerX, centerY - height * 0.4);
+            phasorCtx.lineTo(centerX, centerY + height * 0.4);
+            phasorCtx.stroke();
+            
+            // 坐标轴标注
+            phasorCtx.fillStyle = '#333';
+            phasorCtx.font = '16px Arial';
+            phasorCtx.fillText('+1', centerX + width * 0.4 - 20, centerY + 20);
+            phasorCtx.fillText('+j', centerX + 10, centerY - height * 0.4 + 20);
+            
+            // 计算相量长度
+            const URms = Um / Math.sqrt(2);
+            const IRms = URms / R;
+            const uLength = URms * 0.01 * scale;
+            const iLength = IRms * 0.01 * scale;
+            
+            // 绘制电压相量（红色）
+            phasorCtx.strokeStyle = '#ff4757';
+            phasorCtx.lineWidth = 3;
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(centerX, centerY);
+            phasorCtx.lineTo(centerX + uLength, centerY);
+            phasorCtx.stroke();
+            
+            // 绘制电压相量箭头
+            phasorCtx.fillStyle = '#ff4757';
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(centerX + uLength, centerY);
+            phasorCtx.lineTo(centerX + uLength - 10, centerY - 5);
+            phasorCtx.lineTo(centerX + uLength - 10, centerY + 5);
+            phasorCtx.closePath();
+            phasorCtx.fill();
+            
+            // 绘制电流相量（蓝色）
+            phasorCtx.strokeStyle = '#3742fa';
+            phasorCtx.lineWidth = 3;
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(centerX, centerY);
+            phasorCtx.lineTo(centerX + iLength, centerY);
+            phasorCtx.stroke();
+            
+            // 绘制电流相量箭头
+            phasorCtx.fillStyle = '#3742fa';
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(centerX + iLength, centerY);
+            phasorCtx.lineTo(centerX + iLength - 10, centerY - 5);
+            phasorCtx.lineTo(centerX + iLength - 10, centerY + 5);
+            phasorCtx.closePath();
+            phasorCtx.fill();
+            
+            // 标注相量
+            phasorCtx.fillStyle = '#ff4757';
+            phasorCtx.font = 'bold 18px Arial';
+            phasorCtx.fillText('Ū_R', centerX + uLength + 5, centerY - 10);
+            
+            phasorCtx.fillStyle = '#3742fa';
+            phasorCtx.fillText('İ', centerX + iLength + 5, centerY + 20);
+            
+            // 绘制相量原点标注
+            phasorCtx.fillStyle = '#333';
+            phasorCtx.font = '14px Arial';
+            phasorCtx.fillText('0', centerX - 15, centerY + 15);
+            
+            // 图标题
+            phasorCtx.fillText('图2-4-1(c) 电压电流相量图（同方向）', width * 0.3, height - 10);
+        }
+        
+        // 动画函数
+        function animate() {
+            if (isAnimating) {
+                time += 0.05;
+                calculateValues();
+            }
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        // 公式标签切换
+        function showFormulaTab(step) {
+            // 更新标签状态
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            tabs[step-1].classList.add('active');
+            
+            // 更新内容显示
+            const formulaSteps = document.querySelectorAll('.formula-step');
+            formulaSteps.forEach(formulaStep => formulaStep.classList.remove('active'));
+            document.getElementById(`formula-step-${step}`).classList.add('active');
+            
+            currentFormulaStep = step;
+        }
+        
+        // 上一步
+        function prevStep() {
+            if (currentFormulaStep > 1) {
+                showFormulaTab(currentFormulaStep - 1);
+            }
+        }
+        
+        // 下一步
+        function nextStep() {
+            if (currentFormulaStep < 4) {
+                showFormulaTab(currentFormulaStep + 1);
+            }
+        }
+        
+        // 重置公式推导
+        function resetFormulas() {
+            showFormulaTab(1);
+        }
+        
+        // 验证相位关系
+        function verifyPhase() {
+            const resultDiv = document.getElementById('phase-result');
+            resultDiv.innerHTML = '<span style="color: #2ed573;"><i class="fas fa-check"></i> 验证成功！电压和电流始终同相位，相位差为0°</span>';
+            resultDiv.style.backgroundColor = '#d4edda';
+            resultDiv.style.color = '#155724';
+            
+            // 3秒后清除结果
+            setTimeout(() => {
+                resultDiv.innerHTML = '';
+                resultDiv.style.backgroundColor = '';
+            }, 3000);
+        }
+        
+        // 验证欧姆定律
+        function verifyOhmLaw() {
+            const URms = Um / Math.sqrt(2);
+            const IRms = URms / R;
+            const calculatedIRms = URms / R;
+            
+            const resultDiv = document.getElementById('ohm-result');
+            
+            if (Math.abs(IRms - calculatedIRms) < 0.01) {
+                resultDiv.innerHTML = `<span style="color: #2ed573;"><i class="fas fa-check"></i> 验证成功！U<sub>R</sub> = ${URms.toFixed(2)}V, I = ${IRms.toFixed(2)}A, 满足 U<sub>R</sub> = R × I</span>`;
+                resultDiv.style.backgroundColor = '#d4edda';
+            } else {
+                resultDiv.innerHTML = '<span style="color: #ff4757;"><i class="fas fa-times"></i> 验证失败，请检查计算</span>';
+                resultDiv.style.backgroundColor = '#f8d7da';
+            }
+            
+            // 3秒后清除结果
+            setTimeout(() => {
+                resultDiv.innerHTML = '';
+                resultDiv.style.backgroundColor = '';
+            }, 3000);
+        }
+        
+        // 验证频率影响
+        function verifyFrequency() {
+            const resultDiv = document.getElementById('freq-result');
+            resultDiv.innerHTML = '<span style="color: #2ed573;"><i class="fas fa-check"></i> 验证成功！改变频率不会影响电压电流的相位关系和有效值关系</span>';
+            resultDiv.style.backgroundColor = '#d4edda';
+            
+            // 3秒后清除结果
+            setTimeout(() => {
+                resultDiv.innerHTML = '';
+                resultDiv.style.backgroundColor = '';
+            }, 3000);
+        }
+        
+        // 验证相量关系
+        function verifyPhasor() {
+            const resultDiv = document.getElementById('phasor-result');
+            resultDiv.innerHTML = '<span style="color: #2ed573;"><i class="fas fa-check"></i> 验证成功！Ū<sub>R</sub>和İ始终在同一直线上，满足Ū<sub>R</sub> = R İ</span>';
+            resultDiv.style.backgroundColor = '#d4edda';
+            
+            // 3秒后清除结果
+            setTimeout(() => {
+                resultDiv.innerHTML = '';
+                resultDiv.style.backgroundColor = '';
+            }, 3000);
+        }
+        
+        // 事件监听
+        rSlider.addEventListener('input', function() {
+            R = parseInt(this.value);
+            calculateValues();
+        });
+        
+        uSlider.addEventListener('input', function() {
+            Um = parseInt(this.value);
+            calculateValues();
+        });
+        
+        wSlider.addEventListener('input', function() {
+            w = parseInt(this.value);
+            calculateValues();
+        });
+        
+        // 窗口大小变化时调整Canvas
+        window.addEventListener('resize', function() {
+            initCanvasSize();
+            calculateValues();
+        });
+        
+        // 初始化
+        function init() {
+            initCanvasSize();
+            calculateValues();
+            animate();
+        }
+        
+        // 启动
+        window.onload = init;
+    </script>
+</body>
+</html>

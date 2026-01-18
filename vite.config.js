@@ -1,31 +1,37 @@
-import { fileURLToPath, URL } from 'node:url'
-
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
+import { fileURLToPath, URL } from 'url'
 
-import AutoImport from 'unplugin-auto-import/vite'
-import Components from 'unplugin-vue-components/vite'
-import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    vue(),
-    vueDevTools(),
-    AutoImport({
-      resolvers: [ElementPlusResolver()],
-    }),
-    Components({
-      resolvers: [ElementPlusResolver()],
-    })
-  ],
-  base:'',
+  plugins: [vue()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
-    },
+    }
   },
+  server: {
+    host: 'localhost',
+    port: 5173,
+    strictPort: true, // 如果端口被占用，直接失败
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173
+    },
+    // 允许跨域
+    cors: true,
+    // 配置代理（如果需要）
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000', // 你的后端地址
+        changeOrigin: true,
+        secure: false
+      }
+    }
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: true
+  }
 })
-
-

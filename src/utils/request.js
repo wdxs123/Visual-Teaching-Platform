@@ -3,7 +3,7 @@ import {useUserStore}from '@/stores'
 import { ElMessage } from 'element-plus';
 import router from '@/router';
 
-const baseURL = 'http:/big-event-vue-apt-t.itheima.net'; 
+const baseURL = 'http:/big-event-vue-apt-t.itheima.net';
 // 或者想更灵活，比如截取到端口部分，也可用 window.location.href 再处理
 // 比如 const baseUrl = window.location.href.split('/#')[0] （若有路由哈希情况，根据实际调整）
 
@@ -49,7 +49,7 @@ instance.interceptors.response.use(
     return Promise.reject(err)
 }
 )
-    
+
 
 
 

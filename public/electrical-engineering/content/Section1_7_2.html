@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- 修复这里 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>互感元件交互式学习平台</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
@@ -13,7 +13,7 @@
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135极速化修改deg, #ffffff 0%, #f5f7fa 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%);
             color: #333;
             overflow-x: hidden;
             min-height: 100vh;
@@ -55,7 +55,7 @@
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e9ecee;
+            border: 1px solid #e9ecef;
         }
         .panel {
             margin-bottom: 25px;
@@ -208,8 +208,8 @@
         .info-panel {
             position: absolute;
             bottom: 20px;
-            left: 20极速化修改px;
-            background: rgba(255, 255, 极速化修改255, 0.9);
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
             padding: 15px;
             border-radius: 10px;
             max-width: 300px;
@@ -312,7 +312,7 @@
                             <span>箭头速度</span>
                             <span id="arrow-speed-value">慢</span>
                         </div>
-                        <input type="range" id="arrow-speed" min="1" max="5" step="1" value="2">
+                        <input type="range" id="arrow-speed" min="1" max="5" step="1" value="1">
                     </div>
                     
                     <div class="slider-container">
@@ -378,8 +378,8 @@
         let coil1, coil2;
         let current1 = 0, current2 = 0;
         let changeRate = 0.3;
-        let arrowSpeed = 0.3; // 默认箭头速度
-        let magneticSpeed = 0.01; // 显著降低默认磁感线速度
+        let arrowSpeed = 0.1; // 显著减慢默认箭头速度
+        let magneticSpeed = 0.005; // 显著减慢默认磁感线速度
         let isSamePolarity = true;
         let isAutoDemo = false;
         let demoTime = 0;
@@ -417,7 +417,7 @@
             directionalLight.castShadow = true;
             scene.add(directionalLight);
             
-            // 修复点光源变量名（修正拼写错误）
+            // 修复点光源变量名
             const pointLight = new THREE.PointLight(0x4ca1af, 0.5, 100);
             pointLight.position.set(0, 0, 5);
             scene.add(pointLight);
@@ -503,11 +503,11 @@
             // 线圈2极性标记
             const dot2 = new THREE.Mesh(dotGeometry, dotMaterial);
             dot2.position.set(2, isSamePolarity ? 1.5 : -1.5, 2);
-            dot2.isPolarity极速化修改Mark = true;
+            dot2.isPolarityMark = true;
             scene.add(dot2);
         }
         
-        // 添加电流方向指示器（关键修复）
+        // 添加电流方向指示器
         function addCurrentIndicators() {
             // 清除现有的指示器
             scene.children.filter(child => child.isArrowHelper).forEach(arrow => scene.remove(arrow));
@@ -534,8 +534,10 @@
             const arrowLength2 = Math.max(0.5, Math.abs(current2) / 3);
             const arrowHelper2 = new THREE.ArrowHelper(
                 dir2, 
-                // 修复这里的Vector3拼写错误
-                new THREE.Vector3(2, current2 >= 0 ? -2.5 : 2.5, 0), // 修复这里
+                new THREE.Vector3(2, current2 >= 0 ? -2.5 : 2.5, 0),
+                arrowLength2, 
+                0x3498db,
+                0.5,  // 头部长度
                 0.3   // 头部宽度
             );
             arrowHelper2.isArrowHelper = true;
@@ -588,7 +590,7 @@
             
             // 添加自定义属性
             arrow.isDynamicArrow = true;
-            arrow.speed = (0.2 + Math.random() * 0.3) * arrowSpeed;
+            arrow.speed = (0.1 + Math.random() * 0.2) * arrowSpeed; // 减慢速度
             arrow.direction = direction;
             arrow.xPos = xPos;
             arrow.offset = Math.random() * Math.PI * 2;
@@ -600,8 +602,8 @@
         function updateDynamicArrows(time) {
             scene.children.filter(child => child.isDynamicArrow).forEach(arrow => {
                 // 更新箭头位置 - 使用更慢的速度
-                const speed = arrow.speed * changeRate * Math.max(Math.abs(current1), Math.abs(current2)) / 20;
-                arrow.position.y += arrow.direction * speed * 0.05;
+                const speed = arrow.speed * changeRate * Math.max(Math.abs(current1), Math.abs(current2)) / 40; // 减慢速度
+                arrow.position.y += arrow.direction * speed * 0.03; // 减慢速度
                 
                 // 如果箭头移出视野，重置位置
                 if ((arrow.direction > 0 && arrow.position.y > 3) || 
@@ -610,7 +612,7 @@
                 }
                 
                 // 添加轻微的水平摆动
-                arrow.position.x = arrow.xPos + Math.sin(time + arrow.offset) * 0.1;
+                arrow.position.x = arrow.xPos + Math.sin(time + arrow.offset) * 0.05; // 减少摆动幅度
             });
         }
         
@@ -652,7 +654,7 @@
         // 更新磁力线动画（大大降低速度）
         function updateMagneticLines(time) {
             // 每秒只更新磁力线一次（大约）
-            if (time - lastMagneticUpdate < 1) return;
+            if (time - lastMagneticUpdate < 1.5) return; // 增加时间间隔
             
             lastMagneticUpdate = time;
             
@@ -662,11 +664,11 @@
                 const easeValue = easeInOutQuad(progress);
                 
                 // 更轻微的外观变化
-                const opacity = 0.7 + 0.2 * easeValue;
+                const opacity = 0.7 + 0.1 * easeValue; // 减少不透明度变化
                 line.material.opacity = opacity;
                 
                 // 大大减少位移幅度
-                const displacement = 0.05 * easeValue;
+                const displacement = 0.03 * easeValue; // 减少位移幅度
                 line.position.z = displacement;
             });
         }
@@ -803,8 +805,8 @@
             // 箭头速度滑块监听
             document.getElementById('arrow-speed').addEventListener('input', function(e) {
                 const speedValue = parseInt(e.target.value);
-                // 将1-5的速度值转换为0.1-0.5的速度系数
-                arrowSpeed = speedValue * 0.1;
+                // 将1-5的速度值转换为0.05-0.25的速度系数
+                arrowSpeed = speedValue * 0.05;
                 
                 // 更新显示文本
                 const speedText = ["极慢", "慢", "中", "快", "极快"];
@@ -812,15 +814,15 @@
                 
                 // 更新现有箭头的速度
                 scene.children.filter(child => child.isDynamicArrow).forEach(arrow => {
-                    arrow.speed = (0.2 + Math.random() * 0.3) * arrowSpeed;
+                    arrow.speed = (0.1 + Math.random() * 0.2) * arrowSpeed;
                 });
             });
             
             // 磁力线速度滑块监听（更新为更慢的速度范围）
             document.getElementById('magnetic-speed').addEventListener('input', function(e) {
                 const speedValue = parseInt(e.target.value);
-                // 将1-5的值映射到0.005-0.025范围
-                magneticSpeed = speedValue * 0.005;
+                // 将1-5的值映射到0.0025-0.0125范围
+                magneticSpeed = speedValue * 0.0025;
                 
                 // 更新显示文本
                 const speedText = ["极慢", "慢", "中", "快", "较快"];
@@ -858,18 +860,18 @@
                 current1 = 0;
                 current2 = 0;
                 changeRate = 0.3;
-                arrowSpeed = 0.3;
-                magneticSpeed = 0.01; // 重置为更慢的默认磁感线速度
+                arrowSpeed = 0.1; // 重置为更慢的默认箭头速度
+                magneticSpeed = 0.005; // 重置为更慢的默认磁感线速度
                 document.getElementById('current1-slider').value = 0;
                 document.getElementById('current2-slider').value = 0;
                 document.getElementById('change-rate').value = 30;
-                document.getElementById('arrow-speed').value = 3;
+                document.getElementById('arrow-speed').value = 2;
                 document.getElementById('magnetic-speed').value = 2;
                 document.getElementById('current1-value').textContent = '0 A';
                 document.getElementById('current2-value').textContent = '0 A';
                 document.getElementById('change-rate-value').textContent = '30%';
-                document.getElementById('arrow-speed-value').textContent = '中';
-                document.getElementById('magnetic-speed-value').textContent = '中';
+                document.getElementById('arrow-speed-value').textContent = '慢';
+                document.getElementById('magnetic-speed-value').textContent = '慢';
                 isSamePolarity = true;
                 document.getElementById('same-polarity').classList.add('active');
                 document.getElementById('opposite-polarity').classList.remove('active');
@@ -890,7 +892,7 @@
             lastTime = time;
             
             if (isAutoDemo) {
-                demoTime += delta * 0.2; // 降低自动演示速度
+                demoTime += delta * 0.1; // 显著降低自动演示速度
                 current1 = Math.round(Math.sin(demoTime) * 8);
                 current2 = Math.round(Math.cos(demoTime * 0.7) * 8);
                 
@@ -903,16 +905,16 @@
                 updateDataMonitor();
             }
             
-            // 线圈旋转动画 - 减慢速度
-            coil1.rotation.y += 0.005 * changeRate * Math.sign(current1) || 0;
-            coil2.rotation.y += 0.005 * changeRate * Math.sign(current2) || 0;
+            // 线圈旋转动画 - 显著减慢速度
+            coil1.rotation.y += 0.002 * changeRate * Math.sign(current1) || 0;
+            coil2.rotation.y += 0.002 * changeRate * Math.sign(current2) || 0;
             
             // 磁力线动画 - 使用大大减慢的速度
             updateMagneticLines(time);
             
             // 粒子动画 - 减慢速度
             particles.forEach(particle => {
-                particle.rotation.y += 0.005 * changeRate;
+                particle.rotation.y += 0.002 * changeRate;
             });
             
             // 更新动态箭头
@@ -965,7 +967,7 @@
         // 设置初始数据
         document.getElementById('magnetic-field').textContent = "1 T";
         document.getElementById('emf').textContent = "13 V";
-        document.getElementById('arrow-speed-value').textContent = "中";
+        document.getElementById('arrow-speed-value').textContent = "慢";
         document.getElementById('magnetic-speed-value').textContent = "慢";
     </script>
 </body>
