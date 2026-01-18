@@ -21,7 +21,7 @@
               <path d="M2 12L12 17L22 12" stroke="#4F46E5" stroke-width="2"/>
             </svg>
           </div>
-          <h1>智慧学苑</h1>
+          <h1>知理图云——多元可视化教学平台</h1>
           <p class="tagline">开启知识探索之旅</p>
         </div>
 
@@ -272,7 +272,7 @@
 
     <!-- 底部信息 -->
     <div class="footer">
-      <p>© 2024 智慧学苑 · 让学习成为一种习惯</p>
+      <p>© 2024 知理图云——多元可视化教学平台 · 让学习成为一种习惯</p>
       <p class="footer-links">
         <a href="#" class="footer-link">帮助中心</a> ·
         <a href="#" class="footer-link">隐私政策</a> ·

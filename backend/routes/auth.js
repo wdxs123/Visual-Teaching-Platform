@@ -1,5 +1,4 @@
 /* eslint-env node */
-/* global process */
 
 import express from 'express';
 import bcrypt from 'bcryptjs';
@@ -379,7 +378,7 @@ router.post('/verify-token', async (req, res) => {
         phone: user.phone
       }
     });
-  } catch (_) {  // 使用下划线表示这个变量是故意不使用的
+  } catch {  // 方案1：移除参数
     res.status(401).json({
       success: false,
       message: 'Token无效'

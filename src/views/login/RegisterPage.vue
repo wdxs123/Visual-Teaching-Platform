@@ -21,7 +21,7 @@
               <path d="M2 12L12 17L22 12" stroke="#4F46E5" stroke-width="2"/>
             </svg>
           </div>
-          <h1>智慧学苑</h1>
+          <h1>知理图云——多元可视化教学平台</h1>
           <p class="tagline">开启你的学习之旅</p>
         </div>
 
@@ -60,7 +60,7 @@
       <div class="form-section">
         <div class="form-header">
           <h2>创建新账户</h2>
-          <p>加入智慧学苑，开启知识探索</p>
+          <p>知理图云——多元可视化教学平台，开启知识探索</p>
         </div>
 
         <!-- 注册表单 -->
@@ -252,7 +252,7 @@
             </div>
             <h3>注册成功！</h3>
             <p class="success-message">
-              欢迎加入智慧学苑，<strong>{{ formData.username }}</strong>！<br>
+              欢迎加入知理图云——多元可视化教学平台，<strong>{{ formData.username }}</strong>！<br>
               验证邮件已发送至 <strong>{{ formData.email }}</strong>
             </p>
             <div class="success-actions">
@@ -278,7 +278,7 @@
 
     <!-- 底部信息 -->
     <div class="footer">
-      <p>© 2024 智慧学苑 · 让学习成为一种习惯</p>
+      <p>© 2024 知理图云——多元可视化教学平台 · 让学习成为一种习惯</p>
     </div>
   </div>
 </template>

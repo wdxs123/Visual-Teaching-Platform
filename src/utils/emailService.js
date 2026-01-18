@@ -121,7 +121,7 @@ class EmailService {
       <body>
           <div class="container">
               <div class="header">
-                  <h1>电工学学习系统</h1>
+                  <h1>知理图云——多元可视化教学平台</h1>
                   <p>${title}验证码</p>
               </div>
               <div class="content">
@@ -138,7 +138,7 @@ class EmailService {
                   <p>如果这不是您本人的操作，请忽略此邮件。</p>
               </div>
               <div class="footer">
-                  <p>© 2024 电工学学习系统. 保留所有权利。</p>
+                  <p>© 2024 知理图云——多元可视化教学平台。</p>
                   <p>此邮件由系统自动发送，请勿回复。</p>
               </div>
           </div>
@@ -244,7 +244,7 @@ class EmailService {
       <body>
           <div class="container">
               <div class="header">
-                  <h1>电工学学习系统</h1>
+                  <h1>知理图云——多元可视化教学平台</h1>
                   <p>密码重置成功通知</p>
               </div>
               <div class="content">
@@ -258,7 +258,7 @@ class EmailService {
                   <p>感谢您使用我们的服务！</p>
               </div>
               <div class="footer">
-                  <p>© 2024 电工学学习系统. 保留所有权利。</p>
+                  <p>© 2024 知理图云——多元可视化教学平台. 保留所有权利。</p>
                   <p>此邮件由系统自动发送，请勿回复。</p>
               </div>
           </div>

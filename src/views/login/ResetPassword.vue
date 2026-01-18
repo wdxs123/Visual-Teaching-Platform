@@ -14,7 +14,7 @@
         <div class="brand-content">
           <div class="logo">
             <i class="fas fa-bolt"></i>
-            <span>电气工程学习平台</span>
+            <span>知理图云——多元可视化教学平台</span>
           </div>
           <h1 class="brand-title">设置新密码</h1>
           <p class="brand-subtitle">请为您的账户设置一个新的安全密码</p>

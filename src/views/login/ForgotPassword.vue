@@ -14,7 +14,7 @@
         <div class="brand-content">
           <div class="logo">
             <i class="fas fa-bolt"></i>
-            <span>电气工程学习平台</span>
+            <span>知理图云——多元可视化教学平台</span>
           </div>
           <h1 class="brand-title">找回密码</h1>
           <p class="brand-subtitle">重置您的账户密码，重新开始学习之旅</p>
